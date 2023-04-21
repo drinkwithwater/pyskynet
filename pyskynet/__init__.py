@@ -4,45 +4,20 @@
 ###############################
 import pyskynet.boot
 import pyskynet.skynet_py_mq
-import pyskynet.foreign
+import pyskynet.foreign as foreign
 import pyskynet.skynet_py_main as skynet_py_main
-import pyskynet.skynet_py_foreign_seri as foreign_seri
-import pyskynet.proto as pyskynet_proto
+import pyskynet.skynet as skynet
 
 __version__ = '0.1.5'
 start = pyskynet.boot.start
 join = pyskynet.boot.join
 boot_config = pyskynet.boot.boot_config
 
-#############
-# proto api #
-#############
-
-PTYPE_TEXT = pyskynet.skynet_py_mq.SKYNET_PTYPE.PTYPE_TEXT
-PTYPE_CLIENT = pyskynet.skynet_py_mq.SKYNET_PTYPE.PTYPE_CLIENT
-PTYPE_SOCKET = pyskynet.skynet_py_mq.SKYNET_PTYPE.PTYPE_SOCKET
-PTYPE_LUA = pyskynet.skynet_py_mq.SKYNET_PTYPE.PTYPE_LUA
-PTYPE_FOREIGN_REMOTE = pyskynet.skynet_py_mq.SKYNET_PTYPE.PTYPE_FOREIGN_REMOTE
-PTYPE_FOREIGN = pyskynet.skynet_py_mq.SKYNET_PTYPE.PTYPE_FOREIGN
-
-pyskynet.rawcall = pyskynet_proto.rawcall
-pyskynet.rawsend = pyskynet_proto.rawsend
-pyskynet.ret = pyskynet_proto.ret
+proto = skynet # for compatiable with old code
 
 #################
 # env set & get #
 #################
-
-
-def seri(*args):
-    msg_ptr, msg_size = foreign_seri.remotepack(*args)
-    re_str = foreign_seri.tobytes(msg_ptr, msg_size)
-    foreign_seri.trash(msg_ptr, msg_size)
-    return re_str
-
-
-def deseri(arg_str):
-    return foreign_seri.remoteunpack(arg_str)
 
 
 def getenv(key):
@@ -50,15 +25,15 @@ def getenv(key):
     if data is None:
         return None
     else:
-        return foreign_seri.remoteunpack(data)[0]
+        return foreign.remoteunpack(data)[0]
 
 
 def setenv(key, value):
     if skynet_py_main.self() != 0:
         assert (key is None) or (getenv(key) is None), "Can't setenv exist key : %s " % key
-    msg_ptr, msg_size = foreign_seri.remotepack(value)
+    msg_ptr, msg_size = foreign.remotepack(value)
     newkey = skynet_py_main.setlenv(key, msg_ptr, msg_size)
-    foreign_seri.trash(msg_ptr, msg_size)
+    foreign.trash(msg_ptr, msg_size)
     return newkey
 
 
@@ -81,14 +56,14 @@ def newservice(service_name, *args):
     assert type(service_name) == str or type(service_name) == bytes, "newservice's name must be str or bytes"
     for arg in args:
         assert type(arg) == str or type(arg) == bytes, "newservice's arg must be str or bytes"
-    return pyskynet_proto.call(".launcher", PTYPE_LUA, "LAUNCH", "snlua", service_name, *args)[0]
+    return skynet.call(".launcher", skynet.PTYPE_LUA, "LAUNCH", "snlua", service_name, *args)[0]
 
 
 def uniqueservice(service_name, *args):
     assert type(service_name) == str or type(service_name) == bytes, "uniqueservice's name must be str or bytes"
     for arg in args:
         assert type(arg) == str or type(arg) == bytes, "uniqueservice's arg must be str or bytes"
-    return pyskynet_proto.call(".service", PTYPE_LUA, "LAUNCH", service_name, *args)[0]
+    return skynet.call(".service", skynet.PTYPE_LUA, "LAUNCH", service_name, *args)[0]
 
 
 def scriptservice(scriptaddr_or_loadargs, *args):
@@ -111,18 +86,18 @@ class __CanvasService(object):
         self.service = service
 
     def reset(self, *args):
-        return pyskynet_proto.call(self.service, PTYPE_FOREIGN, "reset", *args)
+        return foreign.call(self.service, "reset", *args)
 
     def render(self, *args):
-        return pyskynet_proto.call(self.service, PTYPE_FOREIGN, "render", *args)
+        return foreign.call(self.service, "render", *args)
 
     def __del__(self):
-        return pyskynet_proto.send(self.service, PTYPE_FOREIGN, "exit")
+        return foreign.send(self.service, "exit")
 
 
 def canvas(script, name="unknowxml"):
     canvas_service = newservice("canvas_service")
-    pyskynet_proto.call(canvas_service, PTYPE_FOREIGN, "init", script, name)
+    foreign.call(canvas_service, "init", script, name)
     return __CanvasService(canvas_service)
 
 
@@ -131,7 +106,3 @@ def self():
     assert address > 0, "service pyholder not start "
     return address
 
-
-def test(script, *args):
-    import pyskynet.foreign
-    return pyskynet.foreign.call(boot.boot_service, "run", script, *args)

@@ -1,3 +1,8 @@
+/**
+ *  this file try to replace skynet_env.c
+ *  old function skynet_getenv, skynet_setenv, ... is compatible with skynet's api
+ *  new function skynet_getlenv, skynet_setlenv, ... is used for pyskynet.getenv, pyskynet.setenv, this can take lua table as value
+*/
 #include "skynet.h"
 #include "skynet_env.h"
 #include "spinlock.h"

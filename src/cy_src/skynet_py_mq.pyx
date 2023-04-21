@@ -73,6 +73,7 @@ def csend(py_dst, int type_id, py_session, py_msg, py_size=None):
     if session < 0:
         if session == -2:
             raise Exception("package is too large:%s"%session)
+            return False
         else:
             return None
     else:

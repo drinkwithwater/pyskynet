@@ -1,11 +1,11 @@
 
 import pyskynet.skynet_py_foreign_seri as foreign_seri
-import pyskynet.proto as pyskynet_proto
-import pyskynet.skynet_py_mq
+import pyskynet.skynet as skynet
+import pyskynet.skynet_py_mq as skynet_py_mq
 
 
-PTYPE_FOREIGN = pyskynet.skynet_py_mq.PTYPE_FOREIGN
-PTYPE_FOREIGN_REMOTE = pyskynet.skynet_py_mq.PTYPE_FOREIGN_REMOTE
+PTYPE_FOREIGN = skynet_py_mq.PTYPE_FOREIGN
+PTYPE_FOREIGN_REMOTE = skynet_py_mq.PTYPE_FOREIGN_REMOTE
 
 
 class CMDDispatcher(object):
@@ -36,39 +36,45 @@ unpack = foreign_seri.unpack
 remotepack = foreign_seri.remotepack
 remoteunpack = foreign_seri.remoteunpack
 
+trash = foreign_seri.trash
+
 
 def __foreign_dispatch(session, source, argtuple):
     ret = CMD(*argtuple)
     if session != 0:
         if type(ret) == tuple:
-            pyskynet_proto.ret(*foreign_seri.pack(*ret))
+            msg_ptr, msg_size = foreign_seri.pack(*ret)
+            skynet.ret(msg_ptr, msg_size)
         else:
-            pyskynet_proto.ret(*foreign_seri.pack(ret))
+            msg_ptr, msg_size = foreign_seri.pack(ret)
+            skynet.ret(msg_ptr, msg_size)
 
 
 def __foreign_remote_dispatch(session, source, argtuple):
     ret = CMD(*argtuple)
     if session != 0:
         if type(ret) == tuple:
-            pyskynet_proto.ret(*foreign_seri.remotepack(*ret))
+            skynet.ret(*foreign_seri.remotepack(*ret))
         else:
-            pyskynet_proto.ret(*foreign_seri.remotepack(ret))
+            skynet.ret(*foreign_seri.remotepack(ret))
 
+def __dontpackhere():
+    raise skynet.PySkynetCallException("don't use pack here")
 
 # dispatch foreign message
-pyskynet_proto.register_protocol(
+skynet.register_protocol(
         id=PTYPE_FOREIGN,
         name="foreign",
-        pack=foreign_seri.pack,
+        pack=__dontpackhere,
         unpack=foreign_seri.unpack,
         dispatch=__foreign_dispatch,
         )
 
 # dispatch foreign message
-pyskynet_proto.register_protocol(
+skynet.register_protocol(
         id=PTYPE_FOREIGN_REMOTE,
         name="foreign_remote",
-        pack=foreign_seri.remotepack,
+        pack=__dontpackhere,
         unpack=foreign_seri.remoteunpack,
         dispatch=__foreign_remote_dispatch,
         )
@@ -95,9 +101,9 @@ def dispatch(cmd=None, func=None):
 
 
 def call(addr, *args):
-    return foreign_seri.unpack(*pyskynet_proto.rawcall(
+    return foreign_seri.unpack(*skynet.rawcall(
         addr, PTYPE_FOREIGN, *foreign_seri.pack(*args)))
 
 
 def send(addr, *args):
-    pyskynet_proto.rawsend(addr, PTYPE_FOREIGN, *foreign_seri.pack(*args))
+    return skynet.rawsend(addr, PTYPE_FOREIGN, *foreign_seri.pack(*args))

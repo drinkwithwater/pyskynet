@@ -5,6 +5,11 @@ import gevent
 from gevent.event import AsyncResult
 import traceback
 
+PTYPE_TEXT = skynet_py_mq.SKYNET_PTYPE.PTYPE_TEXT
+PTYPE_CLIENT = skynet_py_mq.SKYNET_PTYPE.PTYPE_CLIENT
+PTYPE_SOCKET = skynet_py_mq.SKYNET_PTYPE.PTYPE_SOCKET
+PTYPE_LUA = skynet_py_mq.SKYNET_PTYPE.PTYPE_LUA
+
 SKYNET_PTYPE = skynet_py_mq.SKYNET_PTYPE
 
 #####################
@@ -102,7 +107,7 @@ def rawcall(dst, type_name_or_id, msg_ptr, msg_size):
     if re:
         return re
     else:
-        gevent.sleep(0.01)
+        #gevent.sleep(0.01)
         raise PySkynetCallException("call failed from %s" % dst)
 
 
@@ -112,17 +117,21 @@ def rawsend(dst, type_name_or_id, msg_ptr, msg_size):
         rawsend in skynet.lua, send don't need ret
     """
     psproto = pyskynet_proto_dict[type_name_or_id]
-    skynet_py_mq.csend(dst, psproto.id, 0, msg_ptr, msg_size)
+    return skynet_py_mq.csend(dst, psproto.id, 0, msg_ptr, msg_size)
 
 
 # skynet.lua
 def call(addr, type_name_or_id, *args):
-    return foreign_seri.unpack(*rawcall(addr, type_name_or_id, *foreign_seri.pack(*args)))
+    psproto = pyskynet_proto_dict[type_name_or_id]
+    msg_ptr, msg_size = psproto.pack(*args)
+    return psproto.unpack(*rawcall(addr, type_name_or_id, msg_ptr, msg_size))
 
 
 # skynet.lua
 def send(addr, type_name_or_id, *args):
-    rawsend(addr, type_name_or_id, *foreign_seri.pack(*args))
+    psproto = pyskynet_proto_dict[type_name_or_id]
+    msg_ptr, msg_size = psproto.pack(*args)
+    return rawsend(addr, type_name_or_id, msg_ptr, msg_size)
 
 
 # skynet.lua
@@ -134,16 +143,15 @@ def ret(ret_msg_ptr, ret_size):
     session = co_to_remote_session.pop(co)
     source = co_to_remote_address.pop(co)
     if session == 0:
-        pass  # send don't need ret
+        return False
     else:
-        skynet_py_mq.csend(source, SKYNET_PTYPE.PTYPE_RESPONSE, session, ret_msg_ptr, ret_size)
-    # TODO if package is to large, c++ will trigger some exception...
+        return skynet_py_mq.csend(source, SKYNET_PTYPE.PTYPE_RESPONSE, session, ret_msg_ptr, ret_size) is not None
 
 
 ################
 # raw dispatch #
 ################
-def async_handle():
+def __async_handle():
     """
         python actor's main loop, recv and deal message
     """
@@ -151,14 +159,14 @@ def async_handle():
     if source is None:
         return
     else:
-        gevent.spawn(async_handle)
+        gevent.spawn(__async_handle)
     if type_id == SKYNET_PTYPE.PTYPE_RESPONSE:
         # TODO exception
         try:
             ar = local_session_to_ar.pop(session)
             ar.set((ptr, length))
         except KeyError as e:
-            hook_print("[ERROR] unknown response session: %d from %x"%(session, address))
+            hook_print("[ERROR] unknown response session: %d from %x"%(session, source))
     else:
         # TODO exception
         try:
@@ -167,7 +175,7 @@ def async_handle():
             if session != 0:
                 skynet_py_mq.csend(source, SKYNET_PTYPE.PTYPE_ERROR, session, "")
             else:
-                hook_print("[ERROR] unknown request with unexcept type_id %s, session: %d from %x"%(type_id, session, address))
+                hook_print("[ERROR] unknown request with unexcept type_id %s, session: %d from %x"%(type_id, session, source))
             return
         co = gevent.getcurrent()
         co_to_remote_session[co] = session
