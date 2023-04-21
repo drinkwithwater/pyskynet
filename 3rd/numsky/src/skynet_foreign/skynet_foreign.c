@@ -1,5 +1,4 @@
 
-#include "skynet_foreign/hook_skynet_py.h"
 #include "skynet_foreign/skynet_foreign.h"
 #ifdef BUILD_FOR_PYSKYNET
 #include "skynet_modify/skynet_py.h" // for include skynet_py_decref_python
@@ -8,18 +7,11 @@
 #include <stdio.h>
 
 static inline void skynet_foreign_delete(struct skynet_foreign *obj){
-    if(obj->ref_type == SF_REF_SELF) {
-    } else  {
 #ifdef BUILD_FOR_PYSKYNET
-	   if(obj->ref_type == SF_REF_PYTHON) {
-		  skynet_py_decref_python(obj->ref_obj);
-	   } else {
-		  printf("ERROR!!!!!, delete unexception branch < 0\n");
-	   }
-#else
-	   printf("ERROR!!!!!, delete unexception branch < 0\n");
-#endif
+    if(obj->ref_obj != NULL) {
+        skynet_py_decref_python(obj->ref_obj);
     }
+#endif
     SPIN_DESTROY(obj);
     foreign_free(obj);
 }

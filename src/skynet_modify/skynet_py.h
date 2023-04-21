@@ -51,14 +51,17 @@ int skynet_py_send(uint32_t lua_destination, int type, int session, void* msg, s
 int skynet_py_sendname(const char *lua_destination, int type, int session, void* msg, size_t sz);
 
 void skynet_py_decref_python(void * pyobj); // decref python object, called by foreign
+uint32_t skynet_py_address(); // get pyholder's address
+void skynet_py_init(int (*p_uv_async_send)(void *), void * p_uv_async_t); // binding libuv items
 
-void skynet_py_init(int (*p_uv_async_send)(void *), void * p_uv_async_t);
+/* function in skynet_start_modify.c */
 void skynet_py_start(struct skynet_config * config);
 void skynet_py_wakeup();
 void skynet_py_exit();
-uint32_t skynet_py_address();
 
-/* function for env */
+/* function in skynet_env_modify.c */
 void *skynet_py_setlenv(const char *key, const char *value_str, size_t sz);
 const char *skynet_py_getlenv(const char *key, size_t *sz);
 const char *skynet_py_nextenv(const char *key);
+
+

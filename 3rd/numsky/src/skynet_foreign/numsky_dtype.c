@@ -1,4 +1,4 @@
-#include "skynet_foreign/hook_skynet_py.h"
+#include "skynet_foreign/hook_pyskynet.h"
 #include "skynet_foreign/numsky.h"
 #include <stdio.h>
 #include <stdbool.h>

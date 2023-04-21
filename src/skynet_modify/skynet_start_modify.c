@@ -1,3 +1,8 @@
+/**
+ * @cz
+ * this file is modified from skynet_start.c in skynet
+ * expose a non-block start function into python
+*/
 #include "skynet.h"
 #include "skynet_server.h"
 #include "skynet_imp.h"
