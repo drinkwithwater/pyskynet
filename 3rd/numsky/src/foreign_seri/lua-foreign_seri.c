@@ -64,7 +64,6 @@ static inline void wb_foreign(struct foreign_write_block *wb, struct numsky_ndar
 }
 
 
-
 /* override pack_one */
 static void foreign_pack_one(lua_State *L, struct foreign_write_block *b, int index, int depth);
 
