@@ -54,7 +54,7 @@ static PyObject *__foreign_check_base(struct skynet_foreign* high_obj, const cha
 
 // array, skynet to python
 static PyObject *unpack_PyArray(struct foreign_read_block *rb, int cookie) {
-	struct numsky_ndarray *ns_arr = unpack_ns_arr(rb, cookie);
+	struct numsky_ndarray *ns_arr = rb_get_nsarr(rb, cookie);
 	if(ns_arr == NULL) {
 		Py_INCREF(Py_None);
 		return ((PyObject *)Py_None);

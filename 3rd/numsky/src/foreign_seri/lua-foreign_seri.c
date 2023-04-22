@@ -1,4 +1,3 @@
-#include "skynet_foreign/numsky.h"
 
 #include "foreign_seri/seri.h"
 #include "foreign_seri/write_block.h"
@@ -8,42 +7,11 @@ inline static struct write_block* wb_cast(struct foreign_write_block * wb) {
     return (struct write_block*) wb;
 }
 
-inline static struct read_block* rb_cast(struct foreign_read_block* rb) {
-    return (struct read_block*) rb;
-}
-
 inline static void foreign_wb_init(struct foreign_write_block *wb , struct block *b, int mode) {
     wb_init(wb_cast(wb), b);
     wb->mode = mode;
 }
 
-inline static void foreign_rball_init(struct foreign_read_block * rb, char * buffer, int size, int mode) {
-    rball_init(rb_cast(rb), buffer, size);
-    rb->mode = mode;
-}
-
-inline static bool foreign_rb_uint(struct foreign_read_block* rb, npy_intp *value) {
-	npy_intp result = 0;
-	for (uint32_t shift = 0; shift <= 63; shift += 7) {
-		uint8_t *p_byte = (uint8_t*)rb_read(rb_cast(rb), 1);
-		if(p_byte==NULL) {
-			return false;
-		}
-		npy_intp byte = p_byte[0];
-		if (byte & 128) {
-			// More bytes are present
-			result |= ((byte & 127) << shift);
-		} else {
-			result |= (byte << shift);
-			break;
-		}
-	}
-	if(result < 0) {
-		return false;
-	}
-	*value = result;
-	return true;
-}
 
 inline static void foreign_wb_uint(struct foreign_write_block* wb, npy_intp v) {
 	static const int B = 128;
@@ -58,7 +26,6 @@ inline static void foreign_wb_uint(struct foreign_write_block* wb, npy_intp v) {
 }
 
 
-
 /*************
  * pack apis *
  *************/
@@ -66,9 +33,6 @@ inline static void foreign_wb_uint(struct foreign_write_block* wb, npy_intp v) {
 /*used by foreign serialize, pass as a function pointer*/
 static void foreign_wb_write(struct foreign_write_block *b, const void *buf, int sz) {
     wb_push(wb_cast(b), buf, sz);
-}
-static void *foreign_rb_read(struct foreign_read_block *rb, int sz) {
-    return rb_read(rb_cast(rb), sz);
 }
 
 static inline void wb_foreign(struct foreign_write_block *wb, struct numsky_ndarray* arr_obj) {
@@ -240,158 +204,7 @@ int foreign_pack(lua_State *L, int mode) {
     return 2;
 }
 
-
-/***************
- * unpack apis *
- ***************/
-
-static struct numsky_ndarray*
-unpack_ns_arr(struct foreign_read_block *rb, int nd) {
-	// 1. get dtype
-	char * p_typechar = (char *)foreign_rb_read(rb, 1);
-	if(p_typechar == NULL){
-		return NULL;
-	}
-	// 2. init from dimensions
-	struct numsky_ndarray *arr = numsky_ndarray_precreate(nd, p_typechar[0]);
-	for(int i=0;i<nd;i++){
-		bool ok = foreign_rb_uint(rb, &arr->dimensions[i]);
-		if(!ok) {
-			numsky_ndarray_destroy(arr);
-			return NULL;
-		}
-	}
-	// 3. build
-	struct skynet_foreign *foreign_base;
-	char *dataptr;
-	if(rb->mode==MODE_FOREIGN) {
-		numsky_ndarray_autocount(arr);
-		npy_intp *strides = (npy_intp*)foreign_rb_read(rb, sizeof(npy_intp)*nd);
-		if(strides == NULL) {
-			numsky_ndarray_destroy(arr);
-			return NULL;
-		}
-		// 4. get strides,
-		for(int i=0;i<nd;i++){
-			arr->strides[i] = strides[i];
-		}
-		// 5. foreign_base, dataptr
-		// get foreign_base
-		void **v = (void **)foreign_rb_read(rb,sizeof(foreign_base));
-		if (v == NULL) {
-			numsky_ndarray_destroy(arr);
-			return NULL;
-		}
-		memcpy(&foreign_base, v, sizeof(foreign_base));
-		if(foreign_base == NULL) {
-			numsky_ndarray_destroy(arr);
-			printf("can't transfor numsky.ndarray with foreign_base == NULL\n");
-			return NULL;
-		}
-		// get dataptr
-		v = (void **)foreign_rb_read(rb,sizeof(dataptr));
-		if (v == NULL) {
-			numsky_ndarray_destroy(arr);
-			return NULL;
-		}
-		memcpy(&dataptr, v, sizeof(dataptr));
-	} else if(rb->mode==MODE_FOREIGN_REMOTE) {
-		numsky_ndarray_autostridecount(arr);
-		// 4. alloc foreign_base
-		size_t datasize = arr->count*arr->dtype->elsize;
-		// 1) read & copy
-		char * pdata = (char*)foreign_rb_read(rb, datasize);
-		if(pdata==NULL){
-			numsky_ndarray_destroy(arr);
-			return NULL;
-		}
-		foreign_base = skynet_foreign_newbytes(datasize);
-		dataptr = foreign_base->data;
-		memcpy(dataptr, pdata, datasize);
-	} else {
-		numsky_ndarray_destroy(arr);
-		return NULL;
-	}
-	numsky_ndarray_refdata(arr, foreign_base, dataptr);
-	return arr;
-}
-
-/* override unpack_one */
-static void foreign_unpack_one(lua_State *L, struct foreign_read_block *rb);
-
-/* override unpack_table */
-static void foreign_unpack_table(lua_State *L, struct foreign_read_block *rb, int array_size) {
-	if (array_size == MAX_COOKIE-1) {
-		uint8_t type;
-		uint8_t *t = (uint8_t*)foreign_rb_read(rb, sizeof(type));
-		if (t==NULL) {
-			invalid_stream(L,rb_cast(rb));
-		}
-		type = *t;
-		int cookie = type >> 3;
-		if ((type & 7) != TYPE_NUMBER || cookie == TYPE_NUMBER_REAL) {
-			invalid_stream(L,rb_cast(rb));
-		}
-		array_size = get_integer(L,rb_cast(rb),cookie);
-	}
-	luaL_checkstack(L,LUA_MINSTACK,NULL);
-	lua_createtable(L,array_size,0);
-	int i;
-	for (i=1;i<=array_size;i++) {
-		foreign_unpack_one(L,rb);
-		lua_rawseti(L,-2,i);
-	}
-	for (;;) {
-		foreign_unpack_one(L,rb);
-		if (lua_isnil(L,-1)) {
-			lua_pop(L,1);
-			return;
-		}
-		foreign_unpack_one(L,rb);
-		lua_rawset(L,-3);
-	}
-}
-
-/* override push_value */
-static void foreign_push_value(lua_State *L, struct foreign_read_block *rb, int type, int cookie) {
-	switch(type) {
-        case TYPE_FOREIGN_USERDATA: {
-            struct numsky_ndarray *arr = unpack_ns_arr(rb, cookie);
-			if(arr==NULL) {
-				invalid_stream(L, rb_cast(rb));
-			} else {
-				*(struct numsky_ndarray**)(lua_newuserdata(L, sizeof(struct numsky_ndarray*))) = arr;
-				luaL_getmetatable(L, NS_ARR_METANAME);
-				if(lua_isnil(L, -1)) {
-					luaL_error(L, "require 'numsky' before use foreign seri");
-				}
-				lua_setmetatable(L, -2);
-			}
-            break;
-        }
-        case TYPE_TABLE: {
-            foreign_unpack_table(L,rb,cookie);
-            break;
-        }
-        default: {
-            // other data type don't need recursive, just push_value
-            push_value(L, rb_cast(rb), type, cookie);
-            break;
-         }
-    }
-}
-
-static void foreign_unpack_one(lua_State *L, struct foreign_read_block *rb) {
-	uint8_t type;
-	uint8_t *t = (uint8_t*)foreign_rb_read(rb, sizeof(type));
-	if (t==NULL) {
-		invalid_stream(L, rb_cast(rb));
-	}
-	type = *t;
-	foreign_push_value(L, rb, type & 0x7, type>>3);
-}
-
-int foreign_unpack(lua_State *L, int mode){
+static int foreign_unpack(lua_State *L, int mode){
 	if (lua_isnoneornil(L,1)) {
 		return 0;
 	}
@@ -413,20 +226,16 @@ int foreign_unpack(lua_State *L, int mode){
 	}
 
 	lua_settop(L,1);
-	struct foreign_read_block rb;
-	foreign_rball_init(&rb, (char*)buffer, len, mode);
+	struct read_block rb;
+	rb_init(&rb, (char*)buffer, len, mode);
 
-	int i;
-	for (i=0;;i++) {
+	for (int i=0;;i++) {
 		if (i%8==7) {
 			luaL_checkstack(L,LUA_MINSTACK,NULL);
 		}
-		uint8_t type = 0;
-		uint8_t *t = (uint8_t*)foreign_rb_read(&rb, sizeof(type));
-		if (t==NULL)
+		if(lrb_unpack_one(L, &rb, false) == NULL) {
 			break;
-		type = *t;
-		foreign_push_value(L, &rb, type & 0x7, type>>3);
+		}
 	}
 
 	// Need not free buffer

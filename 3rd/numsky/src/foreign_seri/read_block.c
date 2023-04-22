@@ -1,10 +1,11 @@
 
 #include "foreign_seri/read_block.h"
 
-void rball_init(struct read_block * rb, char * buffer, int size) {
+void rb_init(struct read_block * rb, char * buffer, int size, int mode) {
 	rb->buffer = buffer;
 	rb->len = size;
 	rb->ptr = 0;
+    rb->mode = mode;
 }
 
 void * rb_read(struct read_block *rb, int sz) {
@@ -18,13 +19,10 @@ void * rb_read(struct read_block *rb, int sz) {
 	return rb->buffer + ptr;
 }
 
-static inline void
-invalid_stream_line(lua_State *L, struct read_block *rb, int line) {
+void invalid_stream_line(lua_State *L, struct read_block *rb, int line) {
 	int len = rb->len;
 	luaL_error(L, "Invalid serialize stream %d (line:%d)", len, line);
 }
-
-#define invalid_stream(L,rb) invalid_stream_line(L,rb,__LINE__)
 
 lua_Integer get_integer(lua_State *L, struct read_block *rb, int cookie) {
 	switch (cookie) {
@@ -95,7 +93,7 @@ void get_buffer(lua_State *L, struct read_block *rb, int len) {
 	lua_pushlstring(L,p,len);
 }
 
-void unpack_table(lua_State *L, struct read_block *rb, int array_size) {
+void lrb_unpack_table(lua_State *L, struct read_block *rb, int array_size) {
 	if (array_size == MAX_COOKIE-1) {
 		uint8_t type;
 		uint8_t *t = (uint8_t *)rb_read(rb, sizeof(type));
@@ -113,81 +111,189 @@ void unpack_table(lua_State *L, struct read_block *rb, int array_size) {
 	lua_createtable(L,array_size,0);
 	int i;
 	for (i=1;i<=array_size;i++) {
-		unpack_one(L,rb);
+		lrb_unpack_one(L,rb, true);
 		lua_rawseti(L,-2,i);
 	}
 	for (;;) {
-		unpack_one(L,rb);
+		lrb_unpack_one(L,rb, true);
 		if (lua_isnil(L,-1)) {
 			lua_pop(L,1);
 			return;
 		}
-		unpack_one(L,rb);
+		lrb_unpack_one(L,rb, true);
 		lua_rawset(L,-3);
 	}
 }
 
-void push_value(lua_State *L, struct read_block *rb, int type, int cookie) {
+uint8_t* lrb_unpack_one(lua_State *L, struct read_block *rb, bool in_table) {
+	uint8_t *aheadptr = (uint8_t*)rb_read(rb, 1);
+	if (aheadptr==NULL) {
+		if(in_table) {
+			invalid_stream(L, rb);
+		}
+		return NULL;
+	}
+	uint8_t ahead = *aheadptr;
+	int type = ahead & 0x7;
+	int cookie = ahead >> 3;
 	switch(type) {
-	case TYPE_NIL:
-		lua_pushnil(L);
-		break;
-	case TYPE_BOOLEAN:
-		lua_pushboolean(L,cookie);
-		break;
-	case TYPE_NUMBER:
-		if (cookie == TYPE_NUMBER_REAL) {
-			lua_pushnumber(L,get_real(L,rb));
-		} else {
-			lua_pushinteger(L, get_integer(L, rb, cookie));
+        case TYPE_FOREIGN_USERDATA: {
+            struct numsky_ndarray *arr = rb_get_nsarr(rb, cookie);
+			if(arr==NULL) {
+				invalid_stream(L, rb);
+			} else {
+				*(struct numsky_ndarray**)(lua_newuserdata(L, sizeof(struct numsky_ndarray*))) = arr;
+				luaL_getmetatable(L, NS_ARR_METANAME);
+				if(lua_isnil(L, -1)) {
+					luaL_error(L, "require 'numsky' before use foreign seri");
+				}
+				lua_setmetatable(L, -2);
+			}
+            break;
+        }
+		case TYPE_NIL:
+			lua_pushnil(L);
+			break;
+		case TYPE_BOOLEAN:
+			lua_pushboolean(L,cookie);
+			break;
+		case TYPE_NUMBER:
+			if (cookie == TYPE_NUMBER_REAL) {
+				lua_pushnumber(L,get_real(L,rb));
+			} else {
+				lua_pushinteger(L, get_integer(L, rb, cookie));
+			}
+			break;
+		case TYPE_USERDATA:
+			lua_pushlightuserdata(L,get_pointer(L,rb));
+			break;
+		case TYPE_SHORT_STRING:
+			get_buffer(L,rb,cookie);
+			break;
+		case TYPE_LONG_STRING: {
+			if (cookie == 2) {
+				uint16_t *plen = (uint16_t *)rb_read(rb, 2);
+				if (plen == NULL) {
+					invalid_stream(L,rb);
+				}
+				uint16_t n;
+				memcpy(&n, plen, sizeof(n));
+				get_buffer(L,rb,n);
+			} else {
+				if (cookie != 4) {
+					invalid_stream(L,rb);
+				}
+				uint32_t *plen = (uint32_t *)rb_read(rb, 4);
+				if (plen == NULL) {
+					invalid_stream(L,rb);
+				}
+				uint32_t n;
+				memcpy(&n, plen, sizeof(n));
+				get_buffer(L,rb,n);
+			}
+			break;
 		}
-		break;
-	case TYPE_USERDATA:
-		lua_pushlightuserdata(L,get_pointer(L,rb));
-		break;
-	case TYPE_SHORT_STRING:
-		get_buffer(L,rb,cookie);
-		break;
-	case TYPE_LONG_STRING: {
-		if (cookie == 2) {
-			uint16_t *plen = (uint16_t *)rb_read(rb, 2);
-			if (plen == NULL) {
-				invalid_stream(L,rb);
-			}
-			uint16_t n;
-			memcpy(&n, plen, sizeof(n));
-			get_buffer(L,rb,n);
-		} else {
-			if (cookie != 4) {
-				invalid_stream(L,rb);
-			}
-			uint32_t *plen = (uint32_t *)rb_read(rb, 4);
-			if (plen == NULL) {
-				invalid_stream(L,rb);
-			}
-			uint32_t n;
-			memcpy(&n, plen, sizeof(n));
-			get_buffer(L,rb,n);
+		case TYPE_TABLE: {
+			lrb_unpack_table(L,rb,cookie);
+			break;
 		}
-		break;
-	}
-	case TYPE_TABLE: {
-		unpack_table(L,rb,cookie);
-		break;
-	}
-	default: {
-		invalid_stream(L,rb);
-		break;
-	}
-	}
+		default: {
+			invalid_stream(L,rb);
+			break;
+		}
+    }
+	return aheadptr;
 }
 
-void unpack_one(lua_State *L, struct read_block *rb) {
-	uint8_t type;
-	uint8_t *t = (uint8_t*)rb_read(rb, sizeof(type));
-	if (t==NULL) {
-		invalid_stream(L, rb);
+inline static bool foreign_rb_uint(struct read_block* rb, npy_intp *value) {
+	npy_intp result = 0;
+	for (uint32_t shift = 0; shift <= 63; shift += 7) {
+		uint8_t *p_byte = (uint8_t*)rb_read(rb, 1);
+		if(p_byte==NULL) {
+			return false;
+		}
+		npy_intp byte = p_byte[0];
+		if (byte & 128) {
+			// More bytes are present
+			result |= ((byte & 127) << shift);
+		} else {
+			result |= (byte << shift);
+			break;
+		}
 	}
-	type = *t;
-	push_value(L, rb, type & 0x7, type>>3);
+	if(result < 0) {
+		return false;
+	}
+	*value = result;
+	return true;
+}
+
+struct numsky_ndarray* rb_get_nsarr(struct read_block *rb, int nd) {
+	// 1. get dtype
+	char * p_typechar = (char *)rb_read(rb, 1);
+	if(p_typechar == NULL){
+		return NULL;
+	}
+	// 2. init from dimensions
+	struct numsky_ndarray *arr = numsky_ndarray_precreate(nd, p_typechar[0]);
+	for(int i=0;i<nd;i++){
+		bool ok = foreign_rb_uint(rb, &arr->dimensions[i]);
+		if(!ok) {
+			numsky_ndarray_destroy(arr);
+			return NULL;
+		}
+	}
+	// 3. build
+	struct skynet_foreign *foreign_base;
+	char *dataptr;
+	if(rb->mode==MODE_FOREIGN) {
+		numsky_ndarray_autocount(arr);
+		npy_intp *strides = (npy_intp*)rb_read(rb, sizeof(npy_intp)*nd);
+		if(strides == NULL) {
+			numsky_ndarray_destroy(arr);
+			return NULL;
+		}
+		// 4. get strides,
+		for(int i=0;i<nd;i++){
+			arr->strides[i] = strides[i];
+		}
+		// 5. foreign_base, dataptr
+		// get foreign_base
+		void **v = (void **)rb_read(rb,sizeof(foreign_base));
+		if (v == NULL) {
+			numsky_ndarray_destroy(arr);
+			return NULL;
+		}
+		memcpy(&foreign_base, v, sizeof(foreign_base));
+		if(foreign_base == NULL) {
+			numsky_ndarray_destroy(arr);
+			printf("can't transfor numsky.ndarray with foreign_base == NULL\n");
+			return NULL;
+		}
+		// get dataptr
+		v = (void **)rb_read(rb,sizeof(dataptr));
+		if (v == NULL) {
+			numsky_ndarray_destroy(arr);
+			return NULL;
+		}
+		memcpy(&dataptr, v, sizeof(dataptr));
+	} else if(rb->mode==MODE_FOREIGN_REMOTE) {
+		numsky_ndarray_autostridecount(arr);
+		// 4. alloc foreign_base
+		size_t datasize = arr->count*arr->dtype->elsize;
+		// 1) read & copy
+		char * pdata = (char*)rb_read(rb, datasize);
+		if(pdata==NULL){
+			numsky_ndarray_destroy(arr);
+			return NULL;
+		}
+		foreign_base = skynet_foreign_newbytes(datasize);
+		dataptr = foreign_base->data;
+		memcpy(dataptr, pdata, datasize);
+	} else {
+		numsky_ndarray_destroy(arr);
+		return NULL;
+	}
+	numsky_ndarray_refdata(arr, foreign_base, dataptr);
+	return arr;
 }

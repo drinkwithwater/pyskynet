@@ -1,6 +1,6 @@
 #pragma once
 
-#include "skynet_foreign/skynet_foreign.h"
+#include "skynet_foreign/numsky.h"
 
 #include <lua.h>
 #include <lauxlib.h>
