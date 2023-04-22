@@ -1,10 +1,9 @@
+#pragma once
 
-#define LUA_LIB
+#include "skynet_foreign/skynet_foreign.h"
 
-extern "C" {
-#include "skynet_foreign/numsky.h"
-}
-
+#include <lua.h>
+#include <lauxlib.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <assert.h>
@@ -27,15 +26,16 @@ extern "C" {
 // hibits 0~31 : len
 #define TYPE_LONG_STRING 5
 #define TYPE_TABLE 6
+
+// numsky array
 #define TYPE_FOREIGN_USERDATA 7
+
+#define MODE_LUA 0
+#define MODE_FOREIGN 1
+#define MODE_FOREIGN_REMOTE 2
 
 #define MAX_COOKIE 32
 #define COMBINE_TYPE(t,v) ((t) | (v) << 3)
 
+#define BLOCK_SIZE 128
 #define MAX_DEPTH 32
-
-enum SeriMode {
-	MODE_LUA = 0,
-	MODE_FOREIGN = 1,
-	MODE_FOREIGN_REMOTE = 2,
-};

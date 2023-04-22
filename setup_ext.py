@@ -98,7 +98,8 @@ def create_lua_extensions():
         define_macros=MACROS,
         libraries=LIBRARIES)
     lua_foreign_seri = Extension('pyskynet.lualib.pyskynet.foreign_seri',
-        sources=['3rd/numsky/src/lua-foreign_seri.c'],
+        #sources=['3rd/numsky/src/foreign_seri/lua-foreign_seri.c'],
+        sources=list_path('3rd/numsky/src/foreign_seri/', '.c'),
         include_dirs=INCLUDE_DIRS,
         define_macros=MACROS,
         libraries=LIBRARIES)

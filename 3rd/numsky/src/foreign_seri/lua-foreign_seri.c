@@ -1,22 +1,8 @@
-#include "lua-serialize.c"
-
 #include "skynet_foreign/numsky.h"
 
-#define TYPE_FOREIGN_USERDATA 7
-
-#define MODE_LUA 0
-#define MODE_FOREIGN 1
-#define MODE_FOREIGN_REMOTE 2
-
-struct foreign_write_block {
-    struct write_block wb;
-    int mode;
-};
-
-struct foreign_read_block {
-    struct read_block rb;
-    int mode;
-};
+#include "foreign_seri/seri.h"
+#include "foreign_seri/write_block.h"
+#include "foreign_seri/read_block.h"
 
 inline static struct write_block* wb_cast(struct foreign_write_block * wb) {
     return (struct write_block*) wb;
@@ -217,6 +203,27 @@ static void foreign_pack_from(lua_State *L, struct foreign_write_block *b, int f
 	for (i=1;i<=n;i++) {
 		foreign_pack_one(L, b , from + i, 0);
 	}
+}
+
+static void
+seri(lua_State *L, struct block *b, int len) {
+	uint8_t * buffer = (uint8_t*)skynet_malloc(len);
+	uint8_t * ptr = buffer;
+	int sz = len;
+	while(len>0) {
+		if (len >= BLOCK_SIZE) {
+			memcpy(ptr, b->buffer, BLOCK_SIZE);
+			ptr += BLOCK_SIZE;
+			len -= BLOCK_SIZE;
+			b = b->next;
+		} else {
+			memcpy(ptr, b->buffer, len);
+			break;
+		}
+	}
+
+	lua_pushlightuserdata(L, buffer);
+	lua_pushinteger(L, sz);
 }
 
 int foreign_pack(lua_State *L, int mode) {

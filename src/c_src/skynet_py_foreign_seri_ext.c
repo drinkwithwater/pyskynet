@@ -4,7 +4,7 @@
 #include "Python.h"
 #include "numpy/arrayobject.h"
 
-#include "lua-foreign_seri.c"
+#include "foreign_seri/lua-foreign_seri.c"
 
 static bool PyArray_foreign_check_typechar(PyObject *py_obj){
     PyArrayObject *arr = (PyArrayObject*)(py_obj);
