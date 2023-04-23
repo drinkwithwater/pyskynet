@@ -239,6 +239,7 @@ namespace numsky {
 		return std::unique_ptr<numsky_ndarray, void(*)(numsky_ndarray*)>(nullptr, [](numsky_ndarray*l){});
 	}
 
+	int ctor_fromstring(lua_State *L);
 	int ctor_empty(lua_State *L);
 	int ctor_zeros(lua_State *L);
 	int ctor_ones(lua_State *L);
@@ -253,6 +254,7 @@ namespace numsky {
 	int ndarray_methods_flatten(lua_State *L);
 	int ndarray_methods_reshape(lua_State *L);
 	int ndarray_methods_copy(lua_State *L);
+	int ndarray_methods_tostring(lua_State *L);
 	int ndarray_methods_roll(lua_State *L);
 	int ndarray_methods_astype(lua_State *L);
 

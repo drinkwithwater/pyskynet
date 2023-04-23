@@ -79,4 +79,3 @@ int numsky::ndarray__tostring(lua_State *L){
 	auto fp_tostring = lnumsky_template_fp(L, arr_obj->dtype->typechar, _ndarray__tostring);
 	return fp_tostring(L, arr_obj);
 }
-

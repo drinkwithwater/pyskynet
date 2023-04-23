@@ -76,6 +76,7 @@ namespace luabinding {
 		   .setFieldFunction("copy", numsky::ndarray_methods_copy)
 		   .setFieldFunction("astype", numsky::ndarray_methods_astype)
 		   .setFieldFunction("roll", numsky::ndarray_methods_roll)
+		   .setFieldFunction("tostring", numsky::ndarray_methods_tostring)
 
 		   .setMetaFunction("__len", lnumsky_ndarray__len)
 		   .setMetaFunction("__gc", lnumsky_ndarray__gc)

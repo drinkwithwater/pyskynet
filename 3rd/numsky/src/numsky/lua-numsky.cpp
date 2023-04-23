@@ -126,6 +126,7 @@ extern "C" {
 		// ndarray
 		m.setFunction("array", luabinding::Class_<numsky_ndarray>::ctor);
 
+		m.setFunction("fromstring", numsky::ctor_fromstring);
 		m.setFunction("empty", numsky::ctor_empty);
 		m.setFunction("zeros", numsky::ctor_zeros);
 		m.setFunction("ones", numsky::ctor_ones);

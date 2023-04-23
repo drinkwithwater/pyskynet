@@ -148,6 +148,26 @@ numsky::table_to_array<false>(numsky::ThrowableContext *ctx, int table_idx, char
  * routines creation *
  *********************/
 
+int numsky::ctor_fromstring(lua_State *L) {
+    char typechar = 'f';
+    if(!lua_isnone(L, 2)) {
+	   struct numsky_dtype *dtype = luabinding::ClassUtil<numsky_dtype>::check(L, 2);
+	   typechar = dtype->typechar;
+    }
+    auto dtype = numsky_get_dtype_by_char(typechar);
+	size_t strLen = 0;
+	const char* strPtr = luaL_checklstring(L, 1, &strLen);
+	if (strLen % dtype->elsize!=0) {
+		luaL_error(L, "string size must be a multiple of element size");
+		return 0;
+	}
+	numsky_ndarray* arr = numsky::ndarray_new_alloc<true>(L, 1, typechar, [&](int i) -> npy_intp {
+		return strLen / dtype->elsize;
+	}).get();
+    memcpy(arr->dataptr, strPtr, strLen);
+    return 1;
+}
+
 static numsky_ndarray* lnumsky_empty_prebuild(lua_State *L) {
     char typechar = 'f';
     if(!lua_isnone(L, 2)) {

@@ -70,6 +70,15 @@ int numsky::ndarray_methods_copy(lua_State *L) {
 	return 1;
 }
 
+int numsky::ndarray_methods_tostring(lua_State *L){
+	auto arr = luabinding::ClassUtil<numsky_ndarray>::check(L, 1);
+	size_t sz = arr->dtype->elsize * arr->count;
+	std::unique_ptr<char []> tempBuf(new char[sz]);
+	lnumsky_template_fp2(L, arr->dtype->typechar, arr->dtype->typechar, numsky::ndarray_t_copyto)(arr, tempBuf.get());
+	lua_pushlstring(L, tempBuf.get(), sz);
+	return 1;
+}
+
 int numsky::ndarray_methods_roll(lua_State *L) {
 	auto old_arr = luabinding::ClassUtil<numsky_ndarray>::check(L, 1);
 	npy_intp shift = luaL_checkinteger(L, 2);
