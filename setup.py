@@ -152,7 +152,7 @@ def main():
             name="pyskynet",
             version=get_version(),
             author="cz",
-            author_email="chenze.3057@bytedance.com",
+            author_email="drinkwithwater@gmail.com",
             license='MIT',
             description="PySkynet is a library for using skynet in python.",
             ext_modules=[], # setted in build_with_numpy_cython

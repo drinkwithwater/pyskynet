@@ -1,7 +1,7 @@
 #define LUA_LIB
 #include "skynet.h"
 #include "skynet_modify/skynet_py.h"
-#include "skynet_modify/thlua_cache.h"
+#include "skynet_modify/codecache.h"
 
 #include <lua.h>
 #include <lauxlib.h>
@@ -83,7 +83,9 @@ static const struct luaL_Reg l_methods[] = {
     { "setlenv", lsetlenv},
     { "getlenv", lgetlenv},
     { "nextenv", lnextenv},
-    { "cacheload", thluaCacheLoad},
+    { "cacheload", pyskynet_modify_cacheload},
+    { "getscript", pyskynet_modify_getscript},
+    { "addscript", pyskynet_modify_addscript},
     { NULL,  NULL },
 };
 

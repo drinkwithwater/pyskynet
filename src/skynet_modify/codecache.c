@@ -4,29 +4,45 @@
 #include "lauxlib.h"
 #include "spinlock.h"
 
-struct codecache {
+struct skynet_env {
 	struct spinlock lock;
 	lua_State *L;
 };
 
-static struct codecache CC;
 
-LUALIB_API void thlua_initcodecache(void) {
-	SPIN_INIT(&CC);
-	CC.L = luaL_newstate();
+// mCodeScript used for scriptservice
+static struct skynet_env mCodeScript;
+
+// scriptservice_get
+int pyskynet_modify_getscript(lua_State *L) {
+	return 0;
+}
+
+int pyskynet_modify_addscript(lua_State *L) {
+	return 0;
+}
+
+// mCodeLoaded used in loadfile. loadfile can take TypeHintLua file and return cached function
+static struct skynet_env mCodeLoaded;
+
+LUALIB_API void modify_initcodecache(void) {
+	SPIN_INIT(&mCodeLoaded);
+	mCodeLoaded.L = luaL_newstate();
+	SPIN_INIT(&mCodeScript);
+	mCodeScript.L = luaL_newstate();
 }
 
 static const void *
 load_proto(const char *key) {
-  if (CC.L == NULL)
+  if (mCodeLoaded.L == NULL)
     return NULL;
-  SPIN_LOCK(&CC)
-    lua_State *L = CC.L;
+  SPIN_LOCK(&mCodeLoaded)
+    lua_State *L = mCodeLoaded.L;
     lua_pushstring(L, key);
     lua_rawget(L, LUA_REGISTRYINDEX);
     const void * result = lua_touserdata(L, -1);
     lua_pop(L, 1);
-  SPIN_UNLOCK(&CC)
+  SPIN_UNLOCK(&mCodeLoaded)
 
   return result;
 }
@@ -36,8 +52,8 @@ save_proto(const char *key, const void * proto) {
   lua_State *L;
   const void * result = NULL;
 
-  SPIN_LOCK(&CC)
-    L = CC.L;
+  SPIN_LOCK(&mCodeLoaded)
+    L = mCodeLoaded.L;
     lua_pushstring(L, key);
     lua_pushvalue(L, -1);
     lua_rawget(L, LUA_REGISTRYINDEX);
@@ -50,12 +66,12 @@ save_proto(const char *key, const void * proto) {
       lua_pop(L,2);
     }
 
-  SPIN_UNLOCK(&CC)
+  SPIN_UNLOCK(&mCodeLoaded)
   return result;
 }
 
 // cacheload(key:String, missGet:Fn():Ret(String), mode:OrNil(String), env:Any)
-int thluaCacheLoad(lua_State *L) {
+int pyskynet_modify_cacheload(lua_State *L) {
   // 1. if exist
   const char *filename = luaL_checkstring(L, 1);
   const char *mode = luaL_optstring(L, 3, NULL);
