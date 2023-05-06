@@ -5,6 +5,7 @@
 #include "skynet_env.h"
 
 #include "skynet_modify/skynet_py.h"
+#include "skynet_modify/thlua_cache.h"
 
 #include <lua.h>
 #include <lualib.h>
@@ -135,6 +136,8 @@ void skynet_py_init(int (*p_uv_async_send)(void *), void * p_uv_async_t){
 #ifdef LUA_CACHELIB
 	// init the lock of code cache
 	luaL_initcodecache();
+	// @cz init thlua load cache
+	thlua_initcodecache();
 #endif
 
 }

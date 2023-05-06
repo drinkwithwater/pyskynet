@@ -11,7 +11,7 @@ local BOOT = {}
 
 -- for pyskynet repl
 function BOOT.repl(script)
-	local func, err = load("return "..script)
+	local func, err = load("return "..script, "(pyskynet repl)")
     if not func then
 		func, err = load(script)
     end

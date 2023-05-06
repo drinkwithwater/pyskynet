@@ -23,7 +23,7 @@ struct skynet_foreign {
 /**********
  * init *
 **********/
-inline struct skynet_foreign* skynet_foreign_newbytes(size_t data_size) {
+static inline struct skynet_foreign* skynet_foreign_newbytes(size_t data_size) {
 	struct skynet_foreign *obj = (struct skynet_foreign*)foreign_malloc(sizeof(struct skynet_foreign) + data_size);
     SPIN_INIT(obj);
 	obj->flags = SF_FLAGS_WRITEABLE;

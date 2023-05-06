@@ -59,14 +59,23 @@ boot_config = {
 
     # skynet service path
     "cservice": [SKYNET_ROOT+"/cservice/?.so"],
-    "luaservice": [SKYNET_ROOT+"/service/?.lua", PYSKYNET_ROOT+"/service/?.lua", "./?.lua"],
+    "luaservice": [
+        SKYNET_ROOT+"/service/?.lua",
+        PYSKYNET_ROOT+"/service/?.lua", PYSKYNET_ROOT+"/service/?.thlua",
+        "./?.lua", "./?.thlua"
+    ],
 
     # lua require path
     "lua_cpath": [SKYNET_ROOT+"/luaclib/?.so", PYSKYNET_ROOT+"/lualib/?.so", "./?.so"],
-    "lua_path": [SKYNET_ROOT+"/lualib/?.lua", PYSKYNET_ROOT+"/lualib/?.lua", "./?.lua"],
+    "lua_path": [
+        SKYNET_ROOT+"/lualib/?.lua",
+        PYSKYNET_ROOT+"/lualib/?.lua", PYSKYNET_ROOT+"/lualib/?.thlua",
+        "./?.lua", "./?.thlua"
+    ],
 
     # script
-    "lualoader": SKYNET_ROOT+"/lualib/loader.lua",
+    #"lualoader": SKYNET_ROOT+"/lualib/loader.lua",
+    "lualoader": PYSKYNET_ROOT+"/thlua_loader.lua",
     "bootstrap": "snlua skynet_py_boot",
     "logservice": "snlua",
     "logger": "skynet_py_logger",
@@ -78,7 +87,6 @@ boot_config = {
     "standalone": "1",  # used by service_mgr.lua
     "harbor": "0",  # used by cdummy
 }
-
 
 def init(func):
     if __init_funcs is None:

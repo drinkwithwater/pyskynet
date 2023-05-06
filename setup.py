@@ -161,6 +161,7 @@ def main():
             package_data={
                 "pyskynet": ["service/*",
                             "lualib/*",
+                            "thlua_loader.lua",
                             "lualib/*/*"],
                 "skynet": ["service/*",
                           "cservice/*",

@@ -8,7 +8,7 @@ import pyskynet.foreign as foreign
 import pyskynet.skynet_py_main as skynet_py_main
 import pyskynet.skynet as skynet
 
-__version__ = '0.1.5'
+__version__ = '0.2.0'
 start = pyskynet.boot.start
 join = pyskynet.boot.join
 boot_config = pyskynet.boot.boot_config
