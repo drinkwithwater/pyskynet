@@ -1,0 +1,16 @@
+
+(@do
+	local rawList = {
+		"./pyskynet/lualib/",
+	}
+	local pathList = {}
+	for _, rawPath in _G.pairs(rawList) do
+		pathList[#pathList + 1] = rawPath .. "?.d.thlua"
+		pathList[#pathList + 1] = rawPath .. "?.thlua"
+	end
+	setPath(_G.table.concat(pathList, ";"))
+
+end)
+
+
+require "pyskynet"

@@ -1,0 +1,28 @@
+
+const foreign_seri = {}
+
+function.pass foreign_seri.luapack(...:Any):Ret(LightUserdata, Integer)
+end
+
+function.pass foreign_seri.luaunpack(ptr:LightUserdata, sz:Integer)
+end
+
+function.pass foreign_seri.pack(...:Any):Ret(LightUserdata, Integer)
+end
+
+function.pass foreign_seri.unpack(ptr:LightUserdata, sz:Integer)
+end
+
+function.pass foreign_seri.remotepack(...:Any):Ret(LightUserdata, Integer)
+end
+
+function.pass foreign_seri.remoteunpack(ptr:Union(String, LightUserdata), sz:Integer):RetDots(Any)
+end
+
+function.pass foreign_seri.tostring(ptr:LightUserdata, sz:Integer)
+end
+
+function.pass foreign_seri.trash()
+end
+
+return foreign_seri

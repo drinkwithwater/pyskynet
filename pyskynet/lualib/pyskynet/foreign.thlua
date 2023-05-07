@@ -4,8 +4,8 @@ local numsky = require("numsky")
 
 local skynet = require("skynet")
 
-collectgarbage("setpause", 100)
-collectgarbage("setstepmul", 200)
+--collectgarbage("setpause", 100)
+--collectgarbage("setstepmul", 200)
 
 local foreign = {}
 
@@ -30,7 +30,7 @@ foreign.CMD = setmetatable({}, {
 	end
 })
 
-local function __foreign_dispatch(session, source, ...)
+const function __foreign_dispatch(session:Integer, source:Integer, ...)
 	if session ~= 0 then
 		skynet.ret(foreign_seri.pack(foreign.CMD(...)))
 	else
@@ -38,7 +38,7 @@ local function __foreign_dispatch(session, source, ...)
 	end
 end
 
-local function __foreign_remote_dispatch(session, source, ...)
+local function __foreign_remote_dispatch(session:Integer, source:Integer, ...)
 	if session ~= 0 then
 		skynet.ret(foreign_seri.remotepack(foreign.CMD(...)))
      else
@@ -48,7 +48,7 @@ end
 
 
 do
-	local REG = skynet.register_protocol
+	const REG = skynet.register_protocol
 
 	REG {
 		name = "foreign",
@@ -82,7 +82,7 @@ function foreign.dispatch(cmd, func)
 	end
 end
 
-function foreign.call(addr, ...)
+function foreign.call(addr:Integer, ...:Any)
 	return skynet.call(addr, PTYPE_FOREIGN, ...)
 end
 

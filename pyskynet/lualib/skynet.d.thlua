@@ -1,0 +1,40 @@
+
+const skynet = {}
+
+(@do
+    let.RegisterProtocol = Struct {
+		name = String,
+		id = Integer,
+		pack = AnyFunction,
+		unpack = AnyFunction,
+		dispatch = AnyFunction,
+    }
+end)
+
+function.pass skynet.register_protocol(proto:RegisterProtocol)
+end
+
+function.pass skynet.start(vStartFunc:Fn())
+end
+
+function.pass skynet.newservice(name:String, ...:String):Ret(Integer)
+end
+
+function.pass skynet.uniqueservice(name:String, ...:String):Ret(Integer)
+end
+
+function.pass skynet.call(addr:Integer, ...:Any):RetDots(Any)
+end
+
+function.pass skynet.send(addr:Integer, ...:Any)
+end
+
+function.pass skynet.trash(ptr:LightUserdata, sz:OrNil(Integer))
+end
+
+function.pass skynet.ret(msg:LightUserdata, sz:Integer)
+end
+
+skynet.self = 0 @ Integer
+
+return skynet

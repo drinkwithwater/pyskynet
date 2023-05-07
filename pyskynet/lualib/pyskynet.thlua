@@ -15,16 +15,16 @@ pyskynet.start = skynet.start
 
 pyskynet.self = skynet.self
 
-function pyskynet.getenv(k)
+function pyskynet.getenv(k:String):Ret(Any)
 	local data = pyskynet_modify.getlenv(k)
     if data == nil then
         return nil
     else
-        return (foreign.remoteunpack(data))
+        return (foreign.remoteunpack(data, #data))
     end
 end
 
-function pyskynet.setenv(k, v)
+function pyskynet.setenv(k:String, v:Truth)
 	if k ~= nil then
 		assert(pyskynet_modify.getlenv(k) == nil, "Can't setenv exist key : " .. k)
 	end
@@ -35,8 +35,8 @@ function pyskynet.setenv(k, v)
 end
 
 function pyskynet.envs()
-	local re = {}
-	local function nextenv(t, k)
+	const re:Dict(String, Any) = {}
+	local function nextenv(_:Nil, k)
 		return pyskynet_modify.nextenv(k)
 	end
 	for key in nextenv, nil, nil do
@@ -45,23 +45,23 @@ function pyskynet.envs()
 	return re
 end
 
-function pyskynet.newservice(...)
+function pyskynet.newservice(name:String, ...:String)
 	for i=1, select("#", ...) do
 		local arg = select(i, ...)
 		assert(type(arg)=="string", "newservice's arg must be string")
 	end
-	return skynet.newservice(...)
+	return skynet.newservice(name, ...)
 end
 
-function pyskynet.uniqueservice(...)
+function pyskynet.uniqueservice(name:String, ...:String)
 	for i=1, select("#", ...) do
 		local arg = select(i, ...)
 		assert(type(arg)=="string", "uniqueservice's arg must be string")
 	end
-	return skynet.uniqueservice(...)
+	return skynet.uniqueservice(name, ...)
 end
 
-function pyskynet.scriptservice(scriptaddr_or_loadargs, ...)
+function pyskynet.scriptservice(scriptaddr_or_loadargs:String, ...)
     local t1 = type(scriptaddr_or_loadargs)
     local scriptaddr
     if t1 == "string" and scriptaddr_or_loadargs:find("0x") == 1 then
