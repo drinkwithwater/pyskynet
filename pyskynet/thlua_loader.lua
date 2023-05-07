@@ -818,6 +818,7 @@ end)()
 
 
 thluaload = parser.load
+-- 1. patch loadfile
 local loadfile_ = loadfile
 loadfile = function(filename, ...)
     if filename:find("[.]thlua$") then
@@ -828,6 +829,20 @@ loadfile = function(filename, ...)
 		else
 			return loadfile_(filename, ...)
     end
+end
+-- 2. patch searchers
+package.searchers[2] = function(name)
+	local fileName, err1 = package.searchpath(name, package.path)
+	if not fileName then
+		return err1
+	end
+	local file, err2 = io.open(fileName, "r")
+	if not file then
+		return err2
+	end
+	local thluaCode = file:read("*a")
+	file:close()
+	return assert(parser.load(thluaCode, fileName))
 end
 
 -------------------------------------------------
