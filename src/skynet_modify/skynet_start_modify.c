@@ -323,7 +323,6 @@ void skynet_py_exit() {
 
 	free_monitor(G_SKYNET_PY.temp_monitor);
 
-    skynet_free(G_SKYNET_PY.temp_monitor);
     skynet_free(G_SKYNET_PY.temp_wps);
 
 	// harbor_exit may call socket send, so it should exit before socket_free
