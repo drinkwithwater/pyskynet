@@ -9,27 +9,12 @@ struct skynet_env {
 	lua_State *L;
 };
 
-
-// mCodeScript used for scriptservice
-static struct skynet_env mCodeScript;
-
-// scriptservice_get
-int pyskynet_modify_getscript(lua_State *L) {
-	return 0;
-}
-
-int pyskynet_modify_addscript(lua_State *L) {
-	return 0;
-}
-
 // mCodeLoaded used in loadfile. loadfile can take TypeHintLua file and return cached function
 static struct skynet_env mCodeLoaded;
 
-LUALIB_API void modify_initcodecache(void) {
+void skynet_py_initcodecache(void) {
 	SPIN_INIT(&mCodeLoaded);
 	mCodeLoaded.L = luaL_newstate();
-	SPIN_INIT(&mCodeScript);
-	mCodeScript.L = luaL_newstate();
 }
 
 static const void *

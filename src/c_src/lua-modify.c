@@ -1,7 +1,6 @@
 #define LUA_LIB
 #include "skynet.h"
 #include "skynet_modify/skynet_py.h"
-#include "skynet_modify/codecache.h"
 
 #include <lua.h>
 #include <lauxlib.h>
@@ -78,14 +77,33 @@ lnextenv(lua_State *L) {
     return 1;
 }
 
+static int lgetscript(lua_State *L) {
+    int index = luaL_checkinteger(L, 1);
+    size_t sz;
+    const char*data = skynet_py_getscript(index, &sz);
+    if(data == NULL) {
+        lua_pushnil(L);
+    } else {
+        lua_pushlstring(L, data, sz);
+    }
+    return 1;
+}
+
+static int lrefscript(lua_State *L) {
+    size_t sz;
+    const char*data = luaL_checklstring(L, 1, &sz);
+    int index = skynet_py_refscript(data, sz);
+    lua_pushinteger(L, index);
+    return 1;
+}
 
 static const struct luaL_Reg l_methods[] = {
     { "setlenv", lsetlenv},
     { "getlenv", lgetlenv},
     { "nextenv", lnextenv},
     { "cacheload", pyskynet_modify_cacheload},
-    { "getscript", pyskynet_modify_getscript},
-    { "addscript", pyskynet_modify_addscript},
+    { "getscript", lgetscript},
+    { "refscript", lrefscript},
     { NULL,  NULL },
 };
 

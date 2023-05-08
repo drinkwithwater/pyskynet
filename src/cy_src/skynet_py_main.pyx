@@ -14,6 +14,8 @@ cdef extern from "skynet_modify/skynet_py.h":
     void *skynet_py_setlenv(const char *key, const char *value_str, size_t sz)
     const char *skynet_py_getlenv(const char *key, size_t *sz);
     const char *skynet_py_nextenv(const char *key)
+    const char *skynet_py_getscript(int index, size_t *sz);
+    int skynet_py_refscript(const char*key, size_t sz);
 
 ctypedef (char *)(* f_type)(object, object)
 
@@ -77,6 +79,26 @@ def nextenv(key):
         return None
     else:
         return PyBytes_FromString(ptr)
+
+def refscript(script):
+    cdef size_t sz
+    cdef const char *ptr
+    cdef int index
+    if PyBytes_CheckExact(script):
+        ptr = script
+        sz = len(script)
+    else:
+        raise Exception("refscript must take bytes")
+    index = skynet_py_refscript(ptr, sz)
+    return index
+
+def getscript(index):
+    cdef size_t sz
+    cdef const char * value = skynet_py_getscript(index, &sz)
+    if value != NULL:
+        return PyBytes_FromStringAndSize(value, sz);
+    else:
+        return None
 
 def start(int thread, int profile):
     cdef skynet_config config;

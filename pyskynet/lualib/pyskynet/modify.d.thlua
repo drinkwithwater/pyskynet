@@ -10,4 +10,10 @@ end
 function.pass modify.nextenv(vKey:OrNil(String)):Ret(OrNil(String))
 end
 
+function.pass modify.getscript(vScriptId:Integer):Ret(OrNil(String))
+end
+
+function.pass modify.refscript(vScript:String):Ret(Integer)
+end
+
 return modify
