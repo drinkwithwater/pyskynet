@@ -1,14 +1,19 @@
-local foreign_seri = require "pyskynet.foreign_seri"
-local pyskynet = require "pyskynet"
+local modify = require "pyskynet.modify"
 local skynet = require "skynet"
 
-local script_addr = ...
-local script, script_name = table.unpack(pyskynet.getenv(script_addr))
-script_name = script_name or string.format("script_script_%s", script_addr)
+local scriptName, scriptIndex = ...
+local scriptCode = modify.getscript(scriptIndex)
 
-local func, err = thluaload(script, script_name)
-if func then
-	func(...)
+if not scriptCode then
+	error("script node found, key="..tostring(scriptIndex)..",name="..tostring(scriptName))
+end
+
+SERVICE_SCRIPT = scriptCode
+
+local main, err = thluaload(scriptCode, scriptName or string.format("script@%s", scriptIndex))
+
+if not main then
+	error(err)
 else
-	skynet.error("script service parsing failed:"..err)
+	main(select(3, ...))
 end

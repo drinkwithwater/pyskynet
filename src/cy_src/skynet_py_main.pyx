@@ -81,15 +81,8 @@ def nextenv(key):
         return PyBytes_FromString(ptr)
 
 def refscript(script):
-    cdef size_t sz
-    cdef const char *ptr
-    cdef int index
-    if PyBytes_CheckExact(script):
-        ptr = script
-        sz = len(script)
-    else:
-        raise Exception("refscript must take bytes")
-    index = skynet_py_refscript(ptr, sz)
+    script = __check_bytes(script)
+    index = skynet_py_refscript(script, len(script))
     return index
 
 def getscript(index):

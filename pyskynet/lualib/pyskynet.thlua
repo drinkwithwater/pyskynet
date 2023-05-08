@@ -61,17 +61,11 @@ function pyskynet.uniqueservice(name:String, ...:String)
 	return skynet.uniqueservice(name, ...)
 end
 
-function pyskynet.scriptservice(scriptaddr_or_loadargs:String, ...)
-    local t1 = type(scriptaddr_or_loadargs)
-    local scriptaddr
-    if t1 == "string" and scriptaddr_or_loadargs:find("0x") == 1 then
-        scriptaddr = scriptaddr_or_loadargs
-    elseif t1 == "string" then
-        scriptaddr = pyskynet.setenv(nil, {scriptaddr_or_loadargs})
-    elseif t1 == "table" then
-        scriptaddr = pyskynet.setenv(nil, scriptaddr_or_loadargs)
-    end
-	return pyskynet.newservice("script_service", scriptaddr, ...)
+function pyskynet.scriptservice(script:String, ...)
+	const nDebugInfo = debug.getinfo(2)
+	const nSourceName = nDebugInfo.source ..":".. nDebugInfo.currentline
+	const nScriptIndex = pyskynet_modify.refscript(script)
+	return pyskynet.newservice("script_service", nSourceName, tostring(nScriptIndex), ...)
 end
 
 return pyskynet

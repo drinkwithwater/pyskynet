@@ -2,6 +2,7 @@
 ###############################
 # some api different from lua #
 ###############################
+import inspect
 import pyskynet.boot
 import pyskynet.skynet_py_mq
 import pyskynet.foreign as foreign
@@ -66,19 +67,12 @@ def uniqueservice(service_name, *args):
     return skynet.call(".service", skynet.PTYPE_LUA, "LAUNCH", service_name, *args)[0]
 
 
-def scriptservice(scriptaddr_or_loadargs, *args):
-    t1 = type(scriptaddr_or_loadargs)
-    if t1 == str and scriptaddr_or_loadargs.startswith("0x"):
-        scriptaddr = scriptaddr_or_loadargs
-    elif t1 == bytes and scriptaddr_or_loadargs.startswith(b"0x"):
-        scriptaddr = scriptaddr_or_loadargs
-    elif t1 == str or t1 == bytes:
-        scriptaddr = setenv(None, [scriptaddr_or_loadargs])
-    elif t1 == list:
-        scriptaddr = setenv(None, scriptaddr_or_loadargs)
-    else:
-        raise Exception("loadservice's first args must be str or bytes or list")
-    return newservice("script_service", scriptaddr, *args)
+def scriptservice(scriptCode, scriptName=None, *args):
+    scriptIndex = skynet_py_main.refscript(scriptCode)
+    if not scriptName:
+        frameinfo = inspect.getframeinfo(inspect.currentframe())
+        scriptName = frameinfo.filename + ":" + str(frameinfo.lineno)
+    return newservice("script_service", scriptName, str(scriptIndex), *args)
 
 
 class __CanvasService(object):
