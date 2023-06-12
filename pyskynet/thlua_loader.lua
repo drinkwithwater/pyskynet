@@ -821,14 +821,14 @@ thluaload = parser.load
 -- 1. patch loadfile
 local loadfile_ = loadfile
 loadfile = function(filename, ...)
-    if filename:find("[.]thlua$") then
-        return modify.cacheload(filename, function()
-            local file = assert(io.open(filename, "r"))
-            return assert(parser.compile(file:read("a"), filename))
-        end, ...)
-		else
-			return loadfile_(filename, ...)
-    end
+	local ok, err = loadfile_(filename, ...)
+	if ok then
+		return ok
+	end
+	return modify.cacheload(filename, function()
+		local file = assert(io.open(filename, "r"))
+		return assert(parser.compile(file:read("a"), filename))
+	end, ...)
 end
 -- 2. patch searchers
 package.searchers[2] = function(name)
@@ -842,7 +842,7 @@ package.searchers[2] = function(name)
 	end
 	local thluaCode = file:read("*a")
 	file:close()
-	return assert(parser.load(thluaCode, fileName))
+	return assert(parser.load(thluaCode, fileName)), fileName
 end
 
 -------------------------------------------------
