@@ -16,22 +16,14 @@ pyskynet.start = skynet.start
 pyskynet.self = skynet.self
 
 function pyskynet.getenv(k:String):Ret(Any)
-	local data = pyskynet_modify.getlenv(k)
-    if data == nil then
-        return nil
-    else
-        return (foreign.remoteunpack(data, #data))
-    end
+	const data = pyskynet_modify.getlenv(k)
+	return (foreign.remoteunpack(data, #data))
 end
 
 function pyskynet.setenv(k:String, v:Truth)
-	if k ~= nil then
-		assert(pyskynet_modify.getlenv(k) == nil, "Can't setenv exist key : " .. k)
-	end
 	local msg_ptr, msg_size = foreign.remotepack(v)
-	local newkey = pyskynet_modify.setlenv(k, msg_ptr, msg_size)
+	pyskynet_modify.setlenv(k, msg_ptr, msg_size)
 	skynet.trash(msg_ptr, msg_size)
-	return newkey
 end
 
 function pyskynet.envs()

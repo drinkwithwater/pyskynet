@@ -1,7 +1,7 @@
 
 const modify = {}
 
-function.pass modify.getlenv(vKey:String):Ret(OrNil(String))
+function.pass modify.getlenv(vKey:String):Ret(String)
 end
 
 function.pass modify.setlenv(vKey:OrNil(String), vValue:Union(LightUserdata, String), vSize:OrNil(Integer))

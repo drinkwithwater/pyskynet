@@ -39,29 +39,23 @@ const char *skynet_py_getlenv(const char *key, size_t *sz) {
 	return value_data;
 }
 
-void *skynet_py_setlenv(const char *key, const char *value_str, size_t sz) {
+// if conflict, return -1 else return 0
+int skynet_py_setlenv(const char *key, const char *value_str, size_t sz) {
 	SPIN_LOCK(E)
 
 	lua_State *L = E->L;
-	void *newkey = NULL;
-	if(key==NULL) {
-		char addr[32];
-		newkey = (void*)lua_pushlstring(L, value_str, sz);
-		sprintf(addr, "%p", newkey);
-		lua_setglobal(L, addr);
+	lua_getglobal(L, key);
+	int ret = 0;
+	if(lua_isnil(L, -1)) {
+		lua_pop(L, 1);
+		lua_pushlstring(L, value_str, sz);
+		lua_setglobal(L, key);
 	} else {
-		lua_getglobal(L, key);
-		if(lua_isnil(L, -1) || skynet_py_address() == 0) {
-			lua_pop(L, 1);
-			lua_pushlstring(L, value_str, sz);
-			lua_setglobal(L, key);
-		} else {
-			printf("can't set existed env after pyskynet start\n");
-			lua_pop(L, 1);
-		}
+		lua_pop(L, 1);
+		ret = -1;
 	}
 	SPIN_UNLOCK(E)
-	return newkey;
+	return ret;
 }
 
 // nextkey

@@ -33,9 +33,8 @@ def setenv(key, value):
     if skynet_py_main.self() != 0:
         assert (key is None) or (getenv(key) is None), "Can't setenv exist key : %s " % key
     msg_ptr, msg_size = foreign.remotepack(value)
-    newkey = skynet_py_main.setlenv(key, msg_ptr, msg_size)
+    skynet_py_main.setlenv(key, msg_ptr, msg_size)
     foreign.trash(msg_ptr, msg_size)
-    return newkey
 
 
 def envs():

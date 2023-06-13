@@ -60,7 +60,7 @@ void skynet_py_wakeup();
 void skynet_py_exit();
 
 /* function in skynet_env_modify.c */
-void *skynet_py_setlenv(const char *key, const char *value_str, size_t sz);
+int skynet_py_setlenv(const char *key, const char *value_str, size_t sz);
 const char *skynet_py_getlenv(const char *key, size_t *sz);
 const char *skynet_py_nextenv(const char *key);
 

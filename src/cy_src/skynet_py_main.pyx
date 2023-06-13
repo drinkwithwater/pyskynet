@@ -11,7 +11,7 @@ cdef extern from "skynet_env.h":
     const char * skynet_getenv(const char *key);
 
 cdef extern from "skynet_modify/skynet_py.h":
-    void *skynet_py_setlenv(const char *key, const char *value_str, size_t sz)
+    int skynet_py_setlenv(const char *key, const char *value_str, size_t sz)
     const char *skynet_py_getlenv(const char *key, size_t *sz);
     const char *skynet_py_nextenv(const char *key)
     const char *skynet_py_getscript(int index, size_t *sz);
@@ -49,14 +49,11 @@ def setlenv(key, capsule_or_bytes, py_sz=None):
         sz = len(capsule_or_bytes)
     else:
         raise Exception("skynet_py env value must be bytes or pointer")
-    if not (key is None):
-        key = __check_bytes(key)
-        skynet_py_setlenv(key, ptr, sz)
-        return None
-    cdef void *newkey = skynet_py_setlenv(NULL, ptr, sz)
-    cdef char addr[32];
-    cdef int k = sprintf(addr, "%p", newkey)
-    return addr[:k]
+    key = __check_bytes(key)
+    cdef int ret = skynet_py_setlenv(key, ptr, sz)
+    if ret != 0:
+        raise Exception("setlenv but key conflict")
+
 
 
 def getlenv(key):
@@ -66,7 +63,7 @@ def getlenv(key):
     if value != NULL:
         return PyBytes_FromStringAndSize(value, sz);
     else:
-        return None
+        raise Exception("getlenv but value not existed")
 
 def nextenv(key):
     cdef const char * ptr

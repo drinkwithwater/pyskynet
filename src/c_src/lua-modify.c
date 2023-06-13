@@ -20,46 +20,41 @@ lgetlenv(lua_State *L) {
     const char *value = skynet_py_getlenv(key, &sz);
     if(value != NULL) {
         lua_pushlstring(L, value, sz);
+        return 1;
     } else {
-        lua_pushnil(L);
+        return luaL_error(L, "getlenv with empty value key='%s'", key);
     }
-    return 1;
 }
 
 static int
 lsetlenv(lua_State *L) {
-    const char *key;
-	if(lua_isnil(L, 1)) {
-		key = NULL;
-	} else {
-		key = luaL_checkstring(L, 1);
-	}
-	const char *newkey = NULL;
-    size_t sz;
-    const char *value;
+    const char *key = luaL_checkstring(L, 1);
+    bool conflict = false;
     int t2 = lua_type(L,2);
     switch (t2) {
     case LUA_TSTRING: {
-		value = lua_tolstring(L, 2, &sz);
-		newkey = skynet_py_setlenv(key, value, sz);
+        size_t sz;
+		const char *value = lua_tolstring(L, 2, &sz);
+		conflict = skynet_py_setlenv(key, value, sz) != 0;
 		break;
 	 }
     case LUA_TLIGHTUSERDATA: {
-	    value = lua_touserdata(L, 2);
-	    sz = luaL_checkinteger(L, 3);
-	    newkey = skynet_py_setlenv(key, value, sz);
+	    const char *value = lua_touserdata(L, 2);
+        int sz = luaL_checkinteger(L, 3);
+        if(sz < 0) {
+            return luaL_error(L, "setlenv but size < 0 %d", sz);
+        } else {
+            conflict = skynet_py_setlenv(key, value, sz) != 0;
+        }
 	    break;
 	 }
     default:
-	    luaL_error(L, "setlenv invalid param %s", lua_typename(L,t2));
+	    return luaL_error(L, "setlenv invalid param %s", lua_typename(L,t2));
     }
-	if(key != NULL) {
-		return 0;
-	}
-    char addr[32];
-    sprintf(addr, "%p", newkey);
-    lua_pushstring(L, addr);
-	return 1;
+    if(conflict) {
+	    return luaL_error(L, "setlenv but key conflict key='%s'", key);
+    }
+    return 0;
 }
 
 static int
