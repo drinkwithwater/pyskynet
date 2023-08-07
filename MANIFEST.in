@@ -23,3 +23,9 @@ include setup_ext.py
 global-exclude *.so
 global-exclude *.o
 global-exclude *.pyc
+global-exclude .gitignore
+global-exclude .git
+
+prune test
+prune **/.git
+prune **/.github
