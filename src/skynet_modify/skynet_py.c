@@ -117,6 +117,7 @@ void skynet_py_init(int (*p_uv_async_send)(void *), void * p_uv_async_t){
 	q->head = 0;
 	q->tail = 0;
 	q->queue = skynet_malloc(sizeof(struct SkynetPyMessage) * q->cap);
+	SPIN_INIT(q);
 
     // init uv
 	G_SKYNET_PY.uv_async_send = p_uv_async_send;
@@ -124,8 +125,7 @@ void skynet_py_init(int (*p_uv_async_send)(void *), void * p_uv_async_t){
 	G_SKYNET_PY.uv_async_busy = 0;
 	G_SKYNET_PY.holder_context = NULL;
 	G_SKYNET_PY.holder_address = 0;
-
-	SPIN_INIT(q);
+	SPIN_INIT(&G_SKYNET_PY);
 
 	skynet_globalinit();
 	skynet_env_init();

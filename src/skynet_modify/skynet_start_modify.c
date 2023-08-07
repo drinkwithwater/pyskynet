@@ -193,8 +193,8 @@ start(int thread) {
 	G_SKYNET_PY.temp_pids = skynet_malloc((thread+3)*sizeof(pthread_t));
 	pthread_t *pid = G_SKYNET_PY.temp_pids;
 
-	G_SKYNET_PY.temp_monitor = skynet_malloc(sizeof(struct monitor));
-	struct monitor *m = G_SKYNET_PY.temp_monitor;
+	struct monitor *m = skynet_malloc(sizeof(struct monitor));
+	G_SKYNET_PY.temp_monitor = m;
 	memset(m, 0, sizeof(*m));
 	m->count = thread;
 	m->sleep = 0;
@@ -312,17 +312,19 @@ void skynet_py_wakeup() {
 	wakeup(m,0);
 }
 
-void skynet_py_exit() {
+static void skynet_py_tryfree(){
+
+	SPIN_LOCK(&G_SKYNET_PY)
     struct monitor *m = G_SKYNET_PY.temp_monitor;
-    for(int i=0;i<m->count+3;i++){
-        pthread_t *pid = G_SKYNET_PY.temp_pids;
-        pthread_cancel(pid[i]);
-    }
+	G_SKYNET_PY.temp_monitor = NULL;
+	SPIN_UNLOCK(&G_SKYNET_PY)
+	if(m == NULL) {
+		return ;
+	} else {
+		free_monitor(m);
+	}
 
     skynet_free(G_SKYNET_PY.temp_pids);
-
-	free_monitor(G_SKYNET_PY.temp_monitor);
-
     skynet_free(G_SKYNET_PY.temp_wps);
 
 	// harbor_exit may call socket send, so it should exit before socket_free
@@ -331,4 +333,22 @@ void skynet_py_exit() {
 	skynet_globalexit();
 
 	// TODO free other things in G_SKYNET_PY ?
+}
+
+void skynet_py_join() {
+    struct monitor *m = G_SKYNET_PY.temp_monitor;
+    for(int i=0;i<m->count+3;i++){
+        pthread_t *pid = G_SKYNET_PY.temp_pids;
+		pthread_join(pid[i], NULL);
+    }
+	skynet_py_tryfree();
+}
+
+void skynet_py_exit() {
+    struct monitor *m = G_SKYNET_PY.temp_monitor;
+    for(int i=0;i<m->count+3;i++){
+        pthread_t *pid = G_SKYNET_PY.temp_pids;
+        pthread_cancel(pid[i]);
+    }
+	skynet_py_tryfree();
 }

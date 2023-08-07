@@ -38,6 +38,7 @@ struct SkynetPyGlobal {
 	uint32_t holder_address;
 	struct skynet_context * holder_context;
 	// temp malloc when start
+	struct spinlock lock;
 	void *temp_monitor;
 	void *temp_pids;
 	void *temp_wps;
@@ -57,6 +58,7 @@ void skynet_py_init(int (*p_uv_async_send)(void *), void * p_uv_async_t); // bin
 /* function in skynet_start_modify.c */
 void skynet_py_start(struct skynet_config * config);
 void skynet_py_wakeup();
+void skynet_py_join();
 void skynet_py_exit();
 
 /* function in skynet_env_modify.c */

@@ -108,5 +108,8 @@ def start(int thread, int profile):
 def exit():
     skynet_py_exit()
 
+def join():
+    skynet_py_join()
+
 def self():
     return skynet_py_address()
