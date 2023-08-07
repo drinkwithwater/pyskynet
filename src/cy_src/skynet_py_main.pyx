@@ -1,4 +1,5 @@
 # cython: language_level=3
+# cython: legacy_implicit_noexcept=True
 
 import _cffi_backend
 from cpython.pycapsule cimport PyCapsule_GetPointer, PyCapsule_New, PyCapsule_CheckExact

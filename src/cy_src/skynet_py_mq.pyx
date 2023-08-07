@@ -1,4 +1,5 @@
 # cython: language_level=3
+# cython: legacy_implicit_noexcept=True
 
 from cpython.pycapsule cimport PyCapsule_New, PyCapsule_GetPointer, PyCapsule_SetPointer, PyCapsule_GetName
 from cpython.pycapsule cimport PyCapsule_CheckExact
