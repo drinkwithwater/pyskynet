@@ -4,7 +4,10 @@
 package.path , LUA_PATH = LUA_PATH
 package.cpath , LUA_CPATH = LUA_CPATH
 
-local modify = require "pyskynet.modify"
+---------------
+-- thlua.lua --
+---------------
+
 local parser = (function()
 local lpeg = require "lpeg"
 lpeg.setmaxstack(1000)
@@ -816,8 +819,14 @@ end
 return ParseEnv
 end)()
 
+package.preload["thlua"] = function()
+	return {
+		compile=parser.compile,
+		load=parser.load,
+	}
+end
 
-thluaload = parser.load
+local modify = require "pyskynet.modify"
 -- 1. patch loadfile
 local loadfile_ = loadfile
 loadfile = function(filename, ...)

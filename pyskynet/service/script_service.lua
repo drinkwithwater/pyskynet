@@ -1,5 +1,6 @@
 local modify = require "pyskynet.modify"
 local skynet = require "skynet"
+local thlua = require "thlua"
 
 local scriptName, scriptIndex = ...
 local scriptCode = modify.getscript(scriptIndex)
@@ -10,7 +11,7 @@ end
 
 SERVICE_SCRIPT = scriptCode
 
-local main, err = thluaload(scriptCode, scriptName or string.format("script@%s", scriptIndex))
+local main, err = thlua.load(scriptCode, scriptName or string.format("script@%s", scriptIndex))
 
 if not main then
 	error(err)
