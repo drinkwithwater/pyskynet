@@ -33,8 +33,6 @@ lua_service = pyskynet.scriptservice("""
 
 lua_re = foreign.call(lua_service, "echo", "python ping")
 print("[python]call lua return:", lua_re)
-
-pyskynet.join()
 ```
 
 Call python from lua
@@ -58,6 +56,4 @@ lua_service = pyskynet.scriptservice("""
 			print("[lua]return from python:", a)
 		end)
 """)
-
-pyskynet.join()
 ```

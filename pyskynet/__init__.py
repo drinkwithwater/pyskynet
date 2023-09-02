@@ -12,7 +12,6 @@ import pyskynet.skynet as skynet
 __version__ = '0.2.2'
 start = pyskynet.boot.start
 join = pyskynet.boot.join
-boot_config = pyskynet.boot.boot_config
 
 proto = skynet # for compatiable with old code
 
@@ -66,32 +65,31 @@ def uniqueservice(service_name, *args):
     return skynet.call(".service", skynet.PTYPE_LUA, "LAUNCH", service_name, *args)[0]
 
 
-def scriptservice(scriptCode, scriptName=None, *args):
+def scriptservice(scriptCode, *args):
     scriptIndex = skynet_py_main.refscript(scriptCode)
-    if not scriptName:
-        frameinfo = inspect.getframeinfo(inspect.currentframe())
-        scriptName = frameinfo.filename + ":" + str(frameinfo.lineno)
+    frameinfo = inspect.getframeinfo(inspect.currentframe().f_back)
+    scriptName = frameinfo.filename + ":" + str(frameinfo.lineno)
     return newservice("script_service", scriptName, str(scriptIndex), *args)
 
 
-class __CanvasService(object):
-    def __init__(self, service):
-        self.service = service
+#class __CanvasService(object):
+#    def __init__(self, service):
+#        self.service = service
+#
+#    def reset(self, *args):
+#        return foreign.call(self.service, "reset", *args)
+#
+#    def render(self, *args):
+#        return foreign.call(self.service, "render", *args)
+#
+#    def __del__(self):
+#        return foreign.send(self.service, "exit")
 
-    def reset(self, *args):
-        return foreign.call(self.service, "reset", *args)
 
-    def render(self, *args):
-        return foreign.call(self.service, "render", *args)
-
-    def __del__(self):
-        return foreign.send(self.service, "exit")
-
-
-def canvas(script, name="unknowxml"):
-    canvas_service = newservice("canvas_service")
-    foreign.call(canvas_service, "init", script, name)
-    return __CanvasService(canvas_service)
+#def canvas(script, name="unknowxml"):
+#    canvas_service = newservice("canvas_service")
+#    foreign.call(canvas_service, "init", script, name)
+#    return __CanvasService(canvas_service)
 
 
 def self():

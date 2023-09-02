@@ -33,7 +33,7 @@ function BOOT.repl(script)
 end
 
 -- for pyskynet script
-function BOOT.script(scriptName, scriptCode, ...)
+function BOOT.cmdline(scriptName, scriptCode, ...)
 	local main, err = thlua.load(scriptCode, scriptName)
 	if not main then
 		error(err)

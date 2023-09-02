@@ -14,10 +14,10 @@ import pyskynet.skynet_py_main as skynet_py_main
 sys.setdlopenflags(flags)
 
 # 3. some module
-import pyskynet.skynet as skynet
+import pyskynet.skynet_py_foreign_seri
 import pyskynet.skynet_py_mq as skynet_py_mq
 
-__boot_event = gevent.event.Event()
+__boot_event = None
 __exit_event = gevent.event.Event()
 __watcher = gevent.get_hub().loop.async_()
 
@@ -29,7 +29,7 @@ __init_funcs = []
 # first callback, waiting for skynet_py_boot
 def __first_msg_callback():
     global boot_service
-    import pyskynet.skynet_py_foreign_seri
+    import pyskynet.skynet as skynet
     source, type_id, session, ptr, length = skynet_py_mq.crecv()
     # assert first message ( c.send(".python", 0, 0, "") )
     assert type_id == 0, "first message type must be 0 but get %s" % type_id
@@ -54,8 +54,8 @@ SKYNET_ROOT = os.path.join(os.path.abspath(
     os.path.dirname(__file__)), "../skynet")
 PYSKYNET_ROOT = os.path.abspath(os.path.dirname(__file__))
 
-boot_config = {
-    "thread": 2,
+config = {
+    "thread": 8,
 
     # skynet service path
     "cservice": [SKYNET_ROOT+"/cservice/?.so"],
@@ -95,27 +95,28 @@ def init(func):
         __init_funcs.append(func)
 
 
-def start(thread=2, path=[], cpath=[]):
-    """
-    example:
-        start(thread=1,path=["./?.lua"],cpath=["./?.so"])
-    """
+def start():
+    global __boot_event
+    if not (__boot_event is None):
+        __boot_event.wait()
+        return
+    __boot_event = gevent.event.Event()
     global __init_funcs
-    assert type(path) == list, "start path must be list"
-    for f in path:
-        for key in ["lua_path", "luaservice"]:
-            boot_config[key].append(f)
-    assert type(cpath) == list, "start cpath must be list"
-    for f in cpath:
-        for key in ["lua_cpath"]:
-            boot_config[key].append(f)
-    boot_config["thread"] = thread
+    #assert type(path) == list, "start path must be list"
+    #for f in path:
+    #    for key in ["lua_path", "luaservice"]:
+    #        config[key].append(f)
+    #assert type(cpath) == list, "start cpath must be list"
+    #for f in cpath:
+    #    for key in ["lua_cpath"]:
+    #        config[key].append(f)
+    #config["thread"] = thread
     import pyskynet
-    for k, v in boot_config.items():
+    for k, v in config.items():
         if type(v) == list:
             v = ";".join(v)
         pyskynet.setenv(k, v)
-    skynet_py_main.start(thread=thread, profile=boot_config["profile"])
+    skynet_py_main.start(thread=config["thread"], profile=config["profile"])
     __boot_event.wait()
     funcs = __init_funcs
     __init_funcs = None
@@ -149,11 +150,11 @@ def main():
         start()
         with open(args.script) as fo:
             script = fo.read()
-        pyskynet.foreign.call(boot_service, "script", args.script, script, *args.args)
+        pyskynet.foreign.call(boot_service, "cmdline", args.script, script, *args.args)
     else:
         import pyskynet
-        import pyskynet.foreign
         start()
+        import pyskynet.foreign
         import code
         import sys
         import readline
