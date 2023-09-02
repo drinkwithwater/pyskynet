@@ -8,8 +8,15 @@ package.cpath , LUA_CPATH = LUA_CPATH
 -- thlua.lua --
 ---------------
 
-local parser = (function()
-local lpeg = require "lpeg"
+
+package.preload["thlua"] = (function()
+local ok, lpeg = pcall(require, "lpeg")
+if not ok then
+	ok, lpeg = pcall(require, "lulpeg")
+	if not ok then
+		error("lpeg or lulpeg not found")
+	end
+end
 lpeg.setmaxstack(1000)
 lpeg.locale(lpeg)
 
@@ -183,6 +190,7 @@ local tagC=setmetatable({
 })
 
 local hintC={
+	-- short hint
 	wrap=function(isStat, pattBegin, pattBody, pattEnd)
 		pattBody = Cenv * pattBody / function(env, ...) return {...} end
 		return Cenv *
@@ -196,6 +204,7 @@ local hintC={
 			return nHintSpace
 		end
 	end,
+	-- long hint
 	long=function()
 		local name = tagC.String(vvA.Name)
 		local colonInvoke = name * symbA"(" * vv.ExprListOrEmpty * symbA")";
@@ -240,15 +249,16 @@ local hintC={
 			end
 		end
 	end,
-	char=function(char)
-		return lpeg.Cmt(Cenv*Cpos*lpeg.P(char), function(_, i, env, pos)
+	-- string to be true or false
+	take=function(patt)
+		return lpeg.Cmt(Cenv*Cpos*patt*Cpos, function(_, i, env, pos, posEnd)
 			if not env.hinting then
-				env:markDel(pos, pos)
+				env:markDel(pos, posEnd-1)
 				return true
 			else
 				return false
 			end
-		end)
+		end) * vv.Skip
 	end,
 }
 
@@ -353,7 +363,9 @@ local G = lpeg.P { "TypeHintLua";
 		return true
 	end);
 
-	NotnilHint = hintC.char("!") * vv.Skip;
+	NotnilHint = hintC.take(lpeg.P("!"));
+
+	ValueConstHint = hintC.take(lpeg.P("const")*-vv.NameRest);
 
 	AtCastHint = hintC.wrap(
 		false,
@@ -371,10 +383,10 @@ local G = lpeg.P { "TypeHintLua";
 		vv.DoStat + vv.ApplyOrAssignStat + throw("StatHintSpace need DoStat or Apply or AssignStat inside"),
 	symbA(")"));
 
-	HintTerm = suffixedExprByPrimary(
+	--[[HintTerm = suffixedExprByPrimary(
 		tagC.HintTerm(hintC.wrap(false, symb("(@") * cc(false), vv.EvalExpr + vv.SuffixedExpr, symbA(")"))) +
 		vv.PrimaryExpr
-	);
+	);]]
 
 	HintPolyParList = Cenv * Cpos * symb("@<") * vvA.Name * (symb"," * vv.Name)^0 * symbA(">") * Cpos / function(env, pos, ...)
 		local l = {...}
@@ -387,7 +399,7 @@ local G = lpeg.P { "TypeHintLua";
 	AtPolyHint = hintC.wrap(false, symb("@<") * cc("@<"),
 		vvA.SimpleExpr * (symb"," * vv.SimpleExpr)^0, symbA(">"));
 
-	EvalExpr = tagC.HintEval(symb("$") * vv.EvalBegin * (vv.HintTerm + vvA.SimpleExpr) * vv.EvalEnd);
+	EvalExpr = tagC.HintEval(symb("$") * vv.EvalBegin * vvA.SimpleExpr * vv.EvalEnd);
 
   -- hint & eval end }}}
 
@@ -403,9 +415,7 @@ local G = lpeg.P { "TypeHintLua";
 	end;
 
 	Constructor = (function()
-		local Pair = tagC.Pair(
-          ((symb"[" * vvA.Expr * symbA"]") + tagC.String(vv.Name)) *
-          symb"=" * vv.Expr)
+		local Pair = tagC.Pair(((symb"[" * vvA.Expr * symbA"]") + tagC.String(vv.Name)) * symb"=" * vv.Expr)
 		local Field = Pair + vv.Expr
 		local fieldsep = symb(",") + symb(";")
 		local FieldList = (Field * (fieldsep * Field)^0 * fieldsep^-1)^-1
@@ -450,13 +460,19 @@ local G = lpeg.P { "TypeHintLua";
 	end)();
 
 	SimpleExpr = Cpos * (
-						vv.String +
-						tagC.Number(token(vv.Number)) +
+						-- (vv.ValueConstHint * cc(true) + cc(false)) * (
+						cc(false) * (
+							vv.String +
+							tagC.Number(token(vv.Number)) +
+							tagC.False(kw"false") +
+							tagC.True(kw"true") +
+							vv.Constructor
+						)/function(isConst, t)
+							t.isConst = isConst
+							return t
+						end +
 						tagC.Nil(kw"nil") +
-						tagC.False(kw"false") +
-						tagC.True(kw"true") +
 						vv.FuncDef +
-						vv.Constructor +
 						vv.SuffixedExpr +
 						tagC.Dots(symb"...") +
 						vv.EvalExpr
@@ -754,7 +770,7 @@ function ParseEnv:genLuaCode()
 				-- 2. replace hint code with space and newline
 				local nFinishPos = nPosToChange[nStartPos]
 				local nHintCode = nSubject:sub(nStartPos, nFinishPos)
-				nContents[#nContents + 1] = nHintCode:gsub("%S", "")
+				nContents[#nContents + 1] = nHintCode:gsub("[^\r\n\t ]", "")
 				nPreFinishPos = nFinishPos
 			--[[elseif type(nChange) == "string" then
 				local nLuaCode = nSubject:sub(nPreFinishPos + 1, nStartPos)
@@ -780,33 +796,39 @@ function ParseEnv:genLuaCode()
 	return table.concat(nContents)
 end
 
+local boot = {}
 -- return luacode | false, errmsg
-function ParseEnv.compile(vContent, vChunkName)
+function boot.compile(vContent, vChunkName)
 	vChunkName = vChunkName or "[anonymous script]"
-	local nEnv = ParseEnv.new(vContent)
-	local nAstOrFalse, nEnvOrErr = ParseEnv.parse(vContent)
+	local nAstOrFalse, nCodeOrErr = boot.parse(vContent)
 	if not nAstOrFalse then
-		local nLineNum = select(2, vContent:sub(1, nEnvOrErr.pos):gsub('\n', '\n'))
-		local nMsg = vChunkName..":".. nLineNum .." ".. nEnvOrErr[1]
+		local nLineNum = select(2, vContent:sub(1, nCodeOrErr.pos):gsub('\n', '\n'))
+		local nMsg = vChunkName..":".. nLineNum .." ".. nCodeOrErr[1]
 		return false, nMsg
 	else
-		return nEnvOrErr:genLuaCode()
+		return nCodeOrErr
 	end
 end
 
--- return false, errorNode | return chunkNode, parseEnv
-function ParseEnv.parse(vContent)
+-- return false, errorNode | return chunkNode, string
+function boot.parse(vContent)
 	local nEnv = ParseEnv.new(vContent)
 	local nAstOrErr = nEnv:getAstOrErr()
 	if nAstOrErr.tag == "Error" then
 		return false, nAstOrErr
 	else
-		return nAstOrErr, nEnv
+		return nAstOrErr, nEnv:genLuaCode()
 	end
 end
 
-function ParseEnv.load(chunk, chunkName, ...)
-	local luaCode, err = ParseEnv.compile(chunk, chunkName)
+local load = load
+function boot.load(chunk, chunkName, ...)
+	local f, err = load(chunk, chunkName, ...)
+	if f then
+		-- if lua parse success, just return
+		return f
+	end
+	local luaCode, err = boot.compile(chunk, chunkName)
 	if not luaCode then
 		return false, err
 	end
@@ -816,15 +838,39 @@ function ParseEnv.load(chunk, chunkName, ...)
 	end
 	return f
 end
-return ParseEnv
-end)()
 
-package.preload["thlua"] = function()
-	return {
-		compile=parser.compile,
-		load=parser.load,
-	}
+local patch = false
+
+-- patch for load thlua code in lua
+function boot.patch()
+	if not patch then
+		local path = package.path:gsub("[.]lua", ".thlua")
+		table.insert(package.searchers, function(name)
+			local fileName, err1 = package.searchpath(name, path)
+			if not fileName then
+				return err1
+			end
+			local file, err2 = io.open(fileName, "r")
+			if not file then
+				return err2
+			end
+			local thluaCode = file:read("*a")
+			file:close()
+			return assert(boot.load(thluaCode, fileName))
+		end)
+		patch = true
+	end
 end
+
+return boot
+end)
+
+local thlua = require "thlua"
+
+--------------------------------------------------------------------------------------------------------
+------------------------------------- thlua.lua finish -------------------------------------------------
+--------------------------------------------------------------------------------------------------------
+
 
 local modify = require "pyskynet.modify"
 -- 1. patch loadfile
@@ -836,7 +882,7 @@ loadfile = function(filename, ...)
 	end
 	return modify.cacheload(filename, function()
 		local file = assert(io.open(filename, "r"))
-		return assert(parser.compile(file:read("a"), filename))
+		return assert(thlua.compile(file:read("a"), filename))
 	end, ...)
 end
 -- 2. patch searchers
@@ -851,7 +897,7 @@ package.searchers[2] = function(name)
 	end
 	local thluaCode = file:read("*a")
 	file:close()
-	return assert(parser.load(thluaCode, fileName)), fileName
+	return assert(thlua.load(thluaCode, fileName)), fileName
 end
 
 -------------------------------------------------

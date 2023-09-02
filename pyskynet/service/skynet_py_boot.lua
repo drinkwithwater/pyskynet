@@ -4,6 +4,7 @@ local core = require "skynet.core"
 
 local foreign = require "pyskynet.foreign"
 local modify = require "pyskynet.modify"
+local thlua = require "thlua"
 
 ----------------
 -- BOOT items --
@@ -12,11 +13,11 @@ local BOOT = {}
 
 -- for pyskynet repl
 function BOOT.repl(script)
-	local func, err = load("return "..script, "(pyskynet repl)")
-    if not func then
-		func, err = load(script)
-    end
-    if not func then
+	local func, err = thlua.load("return "..script, "(pyskynet repl)")
+	if not func then
+		func, err = thlua.load(script, "(pyskynet repl)")
+	end
+	if not func then
 		print(err)
 	else
 		local function evalprint(ok, ...)
@@ -28,7 +29,17 @@ function BOOT.repl(script)
 			print(...)
 			print(debug.traceback())
 		end))
-    end
+	end
+end
+
+-- for pyskynet script
+function BOOT.script(scriptName, scriptCode, ...)
+	local main, err = thlua.load(scriptCode, scriptName)
+	if not main then
+		error(err)
+	else
+		return main(...)
+	end
 end
 
 -- foreign message for boot, command line pyskynet xxx

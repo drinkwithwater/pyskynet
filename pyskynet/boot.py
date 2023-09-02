@@ -147,13 +147,9 @@ def main():
     if args.script != "":
         import pyskynet
         start()
-        try:
-            with open(args.script) as fo:
-                script = fo.read()
-            pyskynet.scriptservice(script, scriptName=args.script, *args.args)
-            join()
-        except KeyboardInterrupt:
-            return
+        with open(args.script) as fo:
+            script = fo.read()
+        pyskynet.foreign.call(boot_service, "script", args.script, script, *args.args)
     else:
         import pyskynet
         import pyskynet.foreign
