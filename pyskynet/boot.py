@@ -14,16 +14,51 @@ import pyskynet.skynet_py_main as skynet_py_main
 sys.setdlopenflags(flags)
 
 # 3. some module
+import pyskynet.config as config
+import pyskynet.foreign as foreign
 import pyskynet.skynet_py_foreign_seri
 import pyskynet.skynet_py_mq as skynet_py_mq
+from typing import Dict, Any
+
+####################
+# 1. env set & get #
+####################
+
+def getenv(key):
+    data = skynet_py_main.getlenv(key)
+    if data is None:
+        return None
+    else:
+        return foreign.remoteunpack(data)[0]
+
+
+def setenv(key, value):
+    if skynet_py_main.self() != 0:
+        assert (key is None) or (getenv(key) is None), "Can't setenv exist key : %s " % key
+    msg_ptr, msg_size = foreign.remotepack(value)
+    skynet_py_main.setlenv(key, msg_ptr, msg_size)
+    foreign.trash(msg_ptr, msg_size)
+
+
+def envs():
+    key = None
+    re = {}
+    while True:
+        key = skynet_py_main.nextenv(key)
+        if(key is None):
+            break
+        else:
+            re[key] = getenv(key)
+    return re
+
+#################
+# 2. boot items #
+#################
 
 __boot_event = None
-__exit_event = gevent.event.Event()
 __watcher = gevent.get_hub().loop.async_()
 
 boot_service = None
-
-__init_funcs = []
 
 
 # first callback, waiting for skynet_py_boot
@@ -54,78 +89,31 @@ SKYNET_ROOT = os.path.join(os.path.abspath(
     os.path.dirname(__file__)), "../skynet")
 PYSKYNET_ROOT = os.path.abspath(os.path.dirname(__file__))
 
-config = {
-    "thread": 8,
-
-    # skynet service path
-    "cservice": [SKYNET_ROOT+"/cservice/?.so"],
-    "luaservice": [
-        SKYNET_ROOT+"/service/?.lua",
-        PYSKYNET_ROOT+"/service/?.lua", PYSKYNET_ROOT+"/service/?.thlua",
-        "./?.lua", "./?.thlua"
-    ],
-
-    # lua require path
-    "lua_cpath": [SKYNET_ROOT+"/luaclib/?.so", PYSKYNET_ROOT+"/lualib/?.so", "./?.so"],
-    "lua_path": [
-        SKYNET_ROOT+"/lualib/?.lua",
-        PYSKYNET_ROOT+"/lualib/?.lua", PYSKYNET_ROOT+"/lualib/?.thlua",
-        "./?.lua", "./?.thlua"
-    ],
-
-    # script
-    #"lualoader": SKYNET_ROOT+"/lualib/loader.lua",
-    "lualoader": PYSKYNET_ROOT+"/thlua_loader.lua",
-    "bootstrap": "snlua skynet_py_boot",
-    "logservice": "snlua",
-    "logger": "skynet_py_logger",
-
-    # profile
-    "profile": 0,
-
-    # immutable setting, don't use this ...
-    "standalone": "1",  # used by service_mgr.lua
-    "harbor": "0",  # used by cdummy
-}
-
-def init(func):
-    if __init_funcs is None:
-        func()
-    else:
-        __init_funcs.append(func)
-
-
-def start():
+def start_with_settings(settings:Dict[str, Any]):
     global __boot_event
     if not (__boot_event is None):
         __boot_event.wait()
         return
     __boot_event = gevent.event.Event()
-    global __init_funcs
-    #assert type(path) == list, "start path must be list"
-    #for f in path:
-    #    for key in ["lua_path", "luaservice"]:
-    #        config[key].append(f)
-    #assert type(cpath) == list, "start cpath must be list"
-    #for f in cpath:
-    #    for key in ["lua_cpath"]:
-    #        config[key].append(f)
-    #config["thread"] = thread
-    import pyskynet
-    for k, v in config.items():
-        if type(v) == list:
-            v = ";".join(v)
-        pyskynet.setenv(k, v)
-    skynet_py_main.start(thread=config["thread"], profile=config["profile"])
+    setenv("thread", config.thread)
+    setenv("profile", config.profile)
+    # path
+    setenv("cservice", ";".join(config.cservice))
+    setenv("luaservice", ";".join(config.luaservice))
+    setenv("lua_cpath", ";".join(config.lua_cpath))
+    setenv("lua_path", ";".join(config.lua_path))
+    # scripts
+    setenv("lualoader", config.lualoader)
+    setenv("bootstrap", config.bootstrap)
+    setenv("logservice", config.logservice)
+    setenv("logger", config.logger)
+    # immutable setting
+    setenv("standalone", "1") # used by service_mgr.lua
+    setenv("harbor", "0") # used by cdummy
+    # custom settings
+    setenv("settings", settings)
+    skynet_py_main.start(thread=config.thread, profile=config.profile)
     __boot_event.wait()
-    funcs = __init_funcs
-    __init_funcs = None
-    for f in funcs:
-        f()
-
-
-def join():
-    __exit_event.wait()
 
 
 __python_exit = exit
@@ -133,7 +121,6 @@ __python_exit = exit
 
 def exit():
     skynet_py_main.exit()
-    __exit_event.set()
     __python_exit()
 
 
@@ -147,13 +134,13 @@ def main():
     args = parser.parse_args()
     if args.script != "":
         import pyskynet
-        start()
+        start_with_settings({})
         with open(args.script) as fo:
             script = fo.read()
         pyskynet.foreign.call(boot_service, "cmdline", args.script, script, *args.args)
     else:
         import pyskynet
-        start()
+        start_with_settings({})
         import pyskynet.foreign
         import code
         import sys

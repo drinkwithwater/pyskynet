@@ -1,5 +1,4 @@
 
-from pyskynet.boot import start
 import pyskynet.skynet_py_mq as skynet_py_mq
 import pyskynet.skynet_py_foreign_seri as foreign_seri
 import gevent
@@ -98,7 +97,6 @@ def rawcall(dst, type_name_or_id, msg_ptr, msg_size):
     """
         rawcall in skynet.lua, rpc call
     """
-    start()
     psproto = pyskynet_proto_dict[type_name_or_id]
     session = skynet_py_mq.csend(dst, psproto.id, None, msg_ptr, msg_size)
     if session is None:
@@ -118,7 +116,6 @@ def rawsend(dst, type_name_or_id, msg_ptr, msg_size):
     """
         rawsend in skynet.lua, send don't need ret
     """
-    start()
     psproto = pyskynet_proto_dict[type_name_or_id]
     return skynet_py_mq.csend(dst, psproto.id, 0, msg_ptr, msg_size)
 

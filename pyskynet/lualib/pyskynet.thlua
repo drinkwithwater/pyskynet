@@ -15,27 +15,7 @@ pyskynet.start = skynet.start
 
 pyskynet.self = skynet.self
 
-function pyskynet.getenv(k:String):Ret(Any)
-	const data = pyskynet_modify.getlenv(k)
-	return (foreign.remoteunpack(data, #data))
-end
-
-function pyskynet.setenv(k:String, v:Truth)
-	local msg_ptr, msg_size = foreign.remotepack(v)
-	pyskynet_modify.setlenv(k, msg_ptr, msg_size)
-	skynet.trash(msg_ptr, msg_size)
-end
-
-function pyskynet.envs()
-	const re:Dict(String, Any) = {}
-	local function nextenv(_:Nil, k)
-		return pyskynet_modify.nextenv(k)
-	end
-	for key in nextenv, nil, nil do
-		re[key] = pyskynet.getenv(key)
-	end
-	return re
-end
+pyskynet.settings = (foreign.remoteunpack(pyskynet_modify.getlenv("settings")))
 
 function pyskynet.newservice(name:String, ...:String)
 	for i=1, select("#", ...) do

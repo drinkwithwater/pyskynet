@@ -16,7 +16,7 @@ end
 function.pass foreign_seri.remotepack(...:Any):Ret(LightUserdata, Integer)
 end
 
-function.pass foreign_seri.remoteunpack(ptr:Union(String, LightUserdata), sz:Integer):RetDots(Any)
+function.pass foreign_seri.remoteunpack(ptr:Union(String, LightUserdata), sz:OrNil(Integer)):RetDots(Any)
 end
 
 function.pass foreign_seri.tostring(ptr:LightUserdata, sz:Integer)

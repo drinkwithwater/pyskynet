@@ -2,51 +2,39 @@
 ###############################
 # some api different from lua #
 ###############################
-import inspect
-import pyskynet.boot
+from pyskynet.boot import config, main, start_with_settings
 import pyskynet.skynet_py_mq
 import pyskynet.foreign as foreign
 import pyskynet.skynet_py_main as skynet_py_main
 import pyskynet.skynet as skynet
+import inspect
+from typing import Dict, Any
 
-__version__ = '0.2.3'
-start = pyskynet.boot.start
-join = pyskynet.boot.join
+__all__ = [
+    "__version__",
 
-proto = skynet # for compatiable with old code
+    "skynet",
+    "foreign",
 
-#################
-# env set & get #
-#################
+    "config",
 
+    "newservice",
+    "uniqueservice",
+    "scriptservice",
 
-def getenv(key):
-    data = skynet_py_main.getlenv(key)
-    if data is None:
-        return None
-    else:
-        return foreign.remoteunpack(data)[0]
+    "self",
 
+    "main",
+    "start",
 
-def setenv(key, value):
-    if skynet_py_main.self() != 0:
-        assert (key is None) or (getenv(key) is None), "Can't setenv exist key : %s " % key
-    msg_ptr, msg_size = foreign.remotepack(value)
-    skynet_py_main.setlenv(key, msg_ptr, msg_size)
-    foreign.trash(msg_ptr, msg_size)
+    "settings",
+]
 
+__version__ = '0.3.0'
+settings:Dict[str, Any] = {}
 
-def envs():
-    key = None
-    re = {}
-    while True:
-        key = skynet_py_main.nextenv(key)
-        if(key is None):
-            break
-        else:
-            re[key] = getenv(key)
-    return re
-
+def start():
+    start_with_settings(settings)
 
 ###############
 # service api #
