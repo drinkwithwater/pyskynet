@@ -110,6 +110,7 @@ def main():
             entry_points={
                 "console_scripts": [
                     "pyskynet=pyskynet.boot:main",
+                    "pyskynetc=pyskynet.compile:entry",
                 ]
             },
             install_requires=[
