@@ -37,7 +37,7 @@ def create_cython_extensions():
 class build_with_numpy_cython(build):
     def finalize_options(self):
         super().finalize_options()
-        self.distribution.ext_modules=create_skynet_extensions() + create_cython_extensions() + create_lua_extensions() + create_3rd_extensions()
+        self.distribution.ext_modules = create_skynet_extensions() + create_cython_extensions() + create_lua_extensions() + create_3rd_extensions()
         import numpy
         for extension in self.distribution.ext_modules:
             np_inc = numpy.get_include()
@@ -48,6 +48,10 @@ class build_with_numpy_cython(build):
 
 
 class build_ext_rename(build_ext):
+    def get_export_symbols(self, ext_name):
+        # TODO symbol PyInit_xxx will be add in this step, but lua library don't has this symbol, so override this in some platform
+        return super().get_export_symbols(ext_name)
+
     def get_ext_filename(self, ext_name):
         ext_name_last = ext_name.split(".")[-1]
         # cython library start with skynet_py

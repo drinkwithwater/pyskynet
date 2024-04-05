@@ -20,3 +20,5 @@ src/build_linux
 src/build_win
 
 .vscode/*
+
+record.txt
