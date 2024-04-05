@@ -16,33 +16,21 @@ def list_path(path, suffix, exclude_files=[]):
             re.append(path+f)
     return re
 
-# SKYNET_3RD = "./skynet/3rd"
-
-# JEMALLOC_STATICLIB = SKYNET_3RD + "/jemalloc/lib/libjemalloc_pic.a"
-# JEMALLOC_INC = SKYNET_3RD + "/jemalloc/include/jemalloc"
-
-
 LUA_PATH = "./skynet/3rd/lua"
 SKYNET_SRC_PATH = "./skynet/skynet-src"
 
 LIBRARIES = ["pthread", "m", "readline"]
 MACROS = [("NOUSE_JEMALLOC", None), ("BUILD_FOR_PYSKYNET", None), ("__STDC_NO_ATOMICS__", None)]
 
-TFLITE_LIB = None
-
 if sys.platform == "linux":
     MACROS += [("LUA_USE_LINUX", None)]
     LIBRARIES += ["dl"]
-    TFLITE_LIB = "3rd/nn_libs/tflite/lib/manylinux/libtensorflow-lite.a"
 elif sys.platform == "darwin":
     MACROS += [("LUA_USE_MACOSX", None)]
-    TFLITE_LIB = "3rd/nn_libs/tflite/lib/macosx/libtensorflow-lite.a"
 else:
-    TFLITE_LIB = "3rd/nn_libs/tflite/lib/win/tensorflow-lite.lib"
     raise Exception("no build config for platform %s" % sys.platform)
 
-INCLUDE_DIRS = [SKYNET_SRC_PATH, LUA_PATH, "./src", "./src/c_src", "./skynet/lualib-src", "3rd/numsky/src"]
-
+INCLUDE_DIRS = [SKYNET_SRC_PATH, LUA_PATH, "./src", "./src/c_src", "./skynet/lualib-src", "./numsky/src"]
 
 def create_skynet_extensions():
     SKYNET_CSERVICES = ["snlua", "logger", "gate", "harbor"]
@@ -98,29 +86,22 @@ def create_lua_extensions():
         define_macros=MACROS,
         libraries=LIBRARIES)
     lua_foreign_seri = Extension('pyskynet.lualib.pyskynet.foreign_seri',
-        #sources=['3rd/numsky/src/foreign_seri/lua-foreign_seri.c'],
-        sources=list_path('3rd/numsky/src/foreign_seri/', '.c'),
+        sources=list_path('numsky/src/foreign_seri/', '.c'),
         include_dirs=INCLUDE_DIRS,
         define_macros=MACROS,
         libraries=LIBRARIES)
-    #lua_seri_v2 = Extension('pyskynet.lualib.pyskynet.seri_v2',
-    #    sources=list_path('3rd/numsky/src/foreign_seri/', '.cpp'),
-    #    include_dirs=INCLUDE_DIRS,
-    #    define_macros=MACROS,
-    #    extra_compile_args=['-std=c++11'],
-    #    libraries=LIBRARIES)
     lua_modify = Extension('pyskynet.lualib.pyskynet.modify',
         sources=['src/c_src/lua-modify.c'],
         include_dirs=INCLUDE_DIRS,
         define_macros=MACROS,
         libraries=LIBRARIES)
     lua_numsky = Extension('pyskynet.lualib.numsky',
-        sources=list_path("3rd/numsky/src/numsky/ndarray", ".cpp") +
-                list_path("3rd/numsky/src/numsky/ufunc", ".cpp") +
-                list_path("3rd/numsky/src/numsky/canvas", ".cpp") +
-                list_path("3rd/numsky/src/numsky/tinygl", ".cpp") +
-                list_path("3rd/TinyGL/tinygl", ".cpp") +
-                list_path("3rd/numsky/src/numsky", ".cpp"),
+        sources=list_path("numsky/src/numsky/ndarray", ".cpp") +
+                list_path("numsky/src/numsky/ufunc", ".cpp") +
+                list_path("numsky/src/numsky/canvas", ".cpp") +
+                list_path("numsky/src/numsky/tinygl", ".cpp") +
+                list_path("numsky/src/numsky", ".cpp") +
+                list_path("3rd/TinyGL/tinygl", ".cpp"),
         include_dirs=INCLUDE_DIRS + ["3rd/rapidxml", "3rd/TinyGL"],
         define_macros=MACROS,
         extra_compile_args=['-std=c++11'],

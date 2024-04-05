@@ -12,16 +12,12 @@
 
 // 2. spinlock
 #include "spinlock.h"
-#include "skynet_malloc.h"
 
 // 3. npy
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include "numpy/arrayobject.h"
 
 #else
-
-#define skynet_malloc malloc
-#define skynet_free free
 
 // spinlock do nothing
 #define SPIN_INIT(q)

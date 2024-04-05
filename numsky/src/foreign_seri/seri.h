@@ -38,3 +38,10 @@
 #define COMBINE_TYPE(t,v) ((t) | (v) << 3)
 
 #define MAX_DEPTH 32
+
+#ifdef BUILD_FOR_PYSKYNET
+#include "skynet_malloc.h"
+#else
+#define skynet_malloc malloc
+#define skynet_free free
+#endif
