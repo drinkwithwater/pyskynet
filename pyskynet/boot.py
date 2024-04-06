@@ -6,6 +6,7 @@ import os
 import sys
 import gevent.libuv._corecffi as libuv_cffi
 import gevent.event
+import gevent.signal
 
 # 2. dlopen with flags RTLD_GLOBAL
 flags = sys.getdlopenflags()
@@ -114,14 +115,6 @@ def start_with_settings(settings:Dict[str, Any]):
     setenv("settings", settings)
     skynet_py_main.start(thread=config.thread, profile=config.profile)
     __boot_event.wait()
-
-
-__python_exit = exit
-
-
-def exit():
-    skynet_py_main.exit()
-    __python_exit()
 
 
 def main():

@@ -2,7 +2,7 @@
 ###############################
 # some api different from lua #
 ###############################
-from pyskynet.boot import config, main, start_with_settings
+from pyskynet.boot import config, start_with_settings, gevent
 import pyskynet.skynet_py_mq
 import pyskynet.foreign as foreign
 import pyskynet.skynet_py_main as skynet_py_main
@@ -24,8 +24,9 @@ __all__ = [
 
     "self",
 
-    "main",
     "start",
+    "exit",
+    "join",
 
     "settings",
 ]
@@ -85,3 +86,16 @@ def self():
     assert address > 0, "service pyholder not start "
     return address
 
+__python_exit = exit
+
+
+def exit():
+    skynet_py_main.exit()
+    __python_exit()
+
+__join_event = gevent.event.Event()
+
+def join():
+    gevent.signal_handler(gevent.signal.SIGINT, __join_event.set)
+    __join_event.wait()
+    skynet_py_main.exit()

@@ -77,7 +77,12 @@ def create_skynet_extensions():
         sources=["skynet/lualib-src/lua-bson.c"],
         define_macros=MACROS,
         extra_objects=[])
-    return ext_cservices + [ext_skynet, ext_lpeg, ext_md5, ext_bson]
+    ext_sproto = Extension('skynet.luaclib.sproto',
+        include_dirs=[LUA_PATH, "skynet/lualib-src/sproto"],
+        sources=["skynet/lualib-src/sproto/sproto.c", "skynet/lualib-src/sproto/lsproto.c"],
+        define_macros=MACROS,
+        extra_objects=[])
+    return ext_cservices + [ext_skynet, ext_lpeg, ext_md5, ext_bson, ext_sproto]
 
 def create_lua_extensions():
     lua_service_pyholder = Extension('skynet.cservice.pyholder',

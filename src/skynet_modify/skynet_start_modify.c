@@ -222,7 +222,7 @@ start(int thread) {
 		1, 1, 1, 1, 1, 1, 1, 1,
 		2, 2, 2, 2, 2, 2, 2, 2,
 		3, 3, 3, 3, 3, 3, 3, 3, };
-	G_SKYNET_PY.temp_wps = malloc(thread * sizeof(struct worker_parm));
+	G_SKYNET_PY.temp_wps = skynet_malloc(thread * sizeof(struct worker_parm));
 	struct worker_parm *wp = G_SKYNET_PY.temp_wps;
 	for (i=0;i<thread;i++) {
 		wp[i].m = m;
@@ -335,6 +335,7 @@ static void skynet_py_tryfree(){
 	// TODO free other things in G_SKYNET_PY ?
 }
 
+// this function is useless
 void skynet_py_join() {
     struct monitor *m = G_SKYNET_PY.temp_monitor;
     for(int i=0;i<m->count+3;i++){
@@ -345,10 +346,11 @@ void skynet_py_join() {
 }
 
 void skynet_py_exit() {
+	// TODO, how to exit without Segmentation fault?
     struct monitor *m = G_SKYNET_PY.temp_monitor;
     for(int i=0;i<m->count+3;i++){
         pthread_t *pid = G_SKYNET_PY.temp_pids;
-        pthread_cancel(pid[i]);
+        //pthread_cancel(pid[i]);
     }
-	skynet_py_tryfree();
+	//skynet_py_tryfree();
 }
