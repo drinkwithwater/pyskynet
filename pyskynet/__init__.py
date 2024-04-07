@@ -44,7 +44,11 @@ def newservice(service_name, *args):
     assert type(service_name) == str or type(service_name) == bytes, "newservice's name must be str or bytes"
     for arg in args:
         assert type(arg) == str or type(arg) == bytes, "newservice's arg must be str or bytes"
-    return skynet.call(".launcher", skynet.PTYPE_LUA, "LAUNCH", "snlua", service_name, *args)[0]
+    ret = skynet.call(".launcher", skynet.PTYPE_LUA, "LAUNCH", "snlua", service_name, *args)
+    if len(ret) > 0:
+        return ret[0]
+    else:
+        return None
 
 
 def uniqueservice(service_name, *args):

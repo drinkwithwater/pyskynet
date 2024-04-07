@@ -2,7 +2,7 @@
 import os
 from typing import List
 
-__SKYNET_ROOT = os.path.join(os.path.abspath(os.path.dirname(__file__)), "../skynet")
+__SKYNET_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../skynet"))
 __PYSKYNET_ROOT = os.path.abspath(os.path.dirname(__file__))
 
 __all__ = [
