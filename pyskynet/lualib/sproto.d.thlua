@@ -1,0 +1,88 @@
+
+local sproto = {}
+local sproto_mt = { __index = sproto }
+
+local host = {}
+local host_mt = { __index = host }
+
+(@do
+
+let.name2type = namespace()
+let.name2request = namespace()
+let.name2response = namespace()
+
+end)
+
+function:class(let.SprotoObject) sproto.new(bin:String)
+	const self = {.class
+		__cobj = nil@! Truth,
+		__pcache = nil@! Truth,
+		__tcache = nil@! Truth,
+	}
+	return setmetatable(self, sproto_mt)
+end
+
+function.pass sproto.parse(ptext:String):Ret(let.SprotoObject)
+end
+
+function:class(let.SprotoHost) sproto.host(sprotoObject:let.SprotoObject, packagename:OrNil(String))
+	const host = {.class
+		__proto = sprotoObject,
+		__package = nil@!Truth,
+		__session = {}
+	}
+	return setmetatable(host, host_mt)
+end
+
+function.pass sproto:exist_type(typename:String):Ret(Boolean)
+end
+
+function.pass sproto:encode@<T>(typename:T, tbl:name2type[literal(T)]):Ret(String)
+end
+
+function.pass sproto:decode@<T>(typename:T, blob:Union(String, LightUserdata), sz:OrNil(Integer)):Ret(name2type[literal(T)])
+end
+
+sproto.pencode = sproto.encode
+
+sproto.pdecode = sproto.decode
+
+function.pass sproto:exist_proto(pname:String):Ret(String)
+end
+
+function.pass sproto:request_encode@<T>(protoname:T, tbl:name2request[literal(T)]):Ret(String)
+end
+
+function.pass sproto:response_encode@<T>(protoname:T, tbl:name2response[literal(T)]):Ret(String)
+end
+
+function.pass sproto:request_decode@<T>(
+	protoname:T, blob:String, sz:OrNil(Integer)
+):Ret(name2request[literal(T)])
+end
+
+function.pass sproto:response_decode@<T>(
+	protoname:T, blob:String, sz:OrNil(Integer)
+):Ret(name2response[literal(T)])
+end
+
+function.pass sproto:default(typename:Truth, type:Truth):Ret(Truth)
+end
+
+function.pass host:dispatch@<T>(
+	blob:String, sz:OrNil(Integer)
+) :Ret("REQUEST", T, name2request[literal(T)], OrNil(Fn(name2response[literal(T)]):Ret(String)), Any)
+	:Ret("RESPONSE", Integer, name2response[literal(T)], Any)
+	if math.random () > 0 then
+		return "REQUEST", "typename", {}, function() end, "userdata"
+	else
+		return "RESPONSE", 0, {}, "userdata"
+	end
+end
+
+function host:attach(sproto:let.SprotoObject)
+	return function.pass @<T>(protoname:T, args:name2request[literal(T)], session:Integer, userdata:Any):Ret(String)
+	end
+end
+
+return sproto
