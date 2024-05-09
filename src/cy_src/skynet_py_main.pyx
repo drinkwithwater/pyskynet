@@ -6,7 +6,7 @@ from cpython.pycapsule cimport PyCapsule_GetPointer, PyCapsule_New, PyCapsule_Ch
 from cpython.bytes cimport PyBytes_FromString, PyBytes_FromStringAndSize, PyBytes_CheckExact
 from libc.stdio cimport sscanf, sprintf
 
-from skynet_py cimport *
+from skynet_modify cimport *
 
 cdef extern from "skynet_env.h":
     const char * skynet_getenv(const char *key);

@@ -96,7 +96,7 @@ static const struct luaL_Reg l_methods[] = {
     { "setlenv", lsetlenv},
     { "getlenv", lgetlenv},
     { "nextenv", lnextenv},
-    { "cacheload", pyskynet_modify_cacheload},
+    { "cacheload", skynet_modify_cacheload},
     { "getscript", lgetscript},
     { "refscript", lrefscript},
     { NULL,  NULL },

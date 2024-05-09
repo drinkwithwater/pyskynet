@@ -11,7 +11,7 @@ def create_cython_extensions():
                 list_path("src/skynet_modify", ".c") +
                 list_path("numsky/src/skynet_foreign/", ".c") +
                 list_path(LUA_PATH, ".c", ["lua.c", "luac.c"]),
-        depends=['src/cy_src/skynet_py.pxd'],
+        depends=['src/cy_src/skynet_modify.pxd'],
         define_macros=MACROS,
         libraries=LIBRARIES,
         extra_objects=[])
@@ -20,14 +20,14 @@ def create_cython_extensions():
         include_dirs=INCLUDE_DIRS,
         sources=['src/cy_src/skynet_py_foreign_seri.pyx'] +
                 list_path('numsky/src/foreign_seri/', '.c', ["lua-foreign_seri.c"]),
-        depends=['src/cy_src/skynet_py.pxd'],
+        depends=['src/cy_src/skynet_modify.pxd'],
         define_macros=MACROS,
         libraries=LIBRARIES)
 
     ext_mq = Extension('pyskynet.skynet_py_mq',
         include_dirs=INCLUDE_DIRS,
         sources=['src/cy_src/skynet_py_mq.pyx'],
-        depends=['src/cy_src/skynet_py.pxd'],
+        depends=['src/cy_src/skynet_modify.pxd'],
         define_macros=MACROS,
         libraries=LIBRARIES)
 

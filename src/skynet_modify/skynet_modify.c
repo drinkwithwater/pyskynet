@@ -11,11 +11,11 @@
 #include <lauxlib.h>
 #include <signal.h>
 
-struct SkynetPyGlobal G_SKYNET_PY;
+struct SkynetModifyGlobal G_SKYNET_MODIFY;
 
 // code just like skynet_mq.c
-void skynet_py_queue_push(struct SkynetPyMessage *message){
-	struct SkynetPyQueue *q = &(G_SKYNET_PY.recv_queue);
+void skynet_py_queue_push(struct SkynetModifyMessage *message){
+	struct SkynetModifyQueue *q = &(G_SKYNET_MODIFY.recv_queue);
 	int uv_async_busy = 0;
 	SPIN_LOCK(q)
 	// push into queue
@@ -25,7 +25,7 @@ void skynet_py_queue_push(struct SkynetPyMessage *message){
 	}
 
 	if (q->head == q->tail) {
-	    struct SkynetPyMessage *new_queue = skynet_malloc(sizeof(struct SkynetPyMessage) * q->cap * 2);
+	    struct SkynetModifyMessage *new_queue = skynet_malloc(sizeof(struct SkynetModifyMessage) * q->cap * 2);
 	    int i;
 	    for (i=0;i<q->cap;i++) {
 		    new_queue[i] = q->queue[(q->head + i) % q->cap];
@@ -39,20 +39,20 @@ void skynet_py_queue_push(struct SkynetPyMessage *message){
 	}
 
 
-	uv_async_busy = G_SKYNET_PY.uv_async_busy;
+	uv_async_busy = G_SKYNET_MODIFY.uv_async_busy;
 	SPIN_UNLOCK(q)
 
 	// if uv in python is not busy, schedule it again
 	if(!uv_async_busy){
-		G_SKYNET_PY.uv_async_busy = 1;
-	    G_SKYNET_PY.uv_async_send(G_SKYNET_PY.uv_async_handle);
+		G_SKYNET_MODIFY.uv_async_busy = 1;
+	    G_SKYNET_MODIFY.uv_async_send(G_SKYNET_MODIFY.uv_async_handle);
 	}
 }
 
 // code just like skynet_mq.c
-int skynet_py_queue_pop(struct SkynetPyMessage *message){
+int skynet_py_queue_pop(struct SkynetModifyMessage *message){
 	int ret = 1;
-	struct SkynetPyQueue *q = &(G_SKYNET_PY.recv_queue);
+	struct SkynetModifyQueue *q = &(G_SKYNET_MODIFY.recv_queue);
 	SPIN_LOCK(q)
 
 	if (q->head != q->tail) {
@@ -71,7 +71,7 @@ int skynet_py_queue_pop(struct SkynetPyMessage *message){
 		}
 	}else {
 		// if python pop all message and know queue is empty, set no busy
-		G_SKYNET_PY.uv_async_busy = 0;
+		G_SKYNET_MODIFY.uv_async_busy = 0;
 	}
 	SPIN_UNLOCK(q)
 
@@ -80,19 +80,19 @@ int skynet_py_queue_pop(struct SkynetPyMessage *message){
 }
 
 int skynet_py_send(uint32_t lua_destination, int type, int session, void* msg, size_t sz){
-    int real_session = skynet_send(G_SKYNET_PY.holder_context, G_SKYNET_PY.holder_address, lua_destination, type, session, msg, sz);
+    int real_session = skynet_send(G_SKYNET_MODIFY.holder_context, G_SKYNET_MODIFY.holder_address, lua_destination, type, session, msg, sz);
     skynet_py_wakeup();
     return real_session;
 }
 
 int skynet_py_sendname(const char *lua_destination, int type, int session, void* msg, size_t sz){
-    int real_session = skynet_sendname(G_SKYNET_PY.holder_context, G_SKYNET_PY.holder_address, lua_destination, type, session, msg, sz);
+    int real_session = skynet_sendname(G_SKYNET_MODIFY.holder_context, G_SKYNET_MODIFY.holder_address, lua_destination, type, session, msg, sz);
     skynet_py_wakeup();
     return real_session;
 }
 
 void skynet_py_decref_python(void * pyobj) {
-	struct SkynetPyMessage msg;
+	struct SkynetModifyMessage msg;
     msg.type = PTYPE_DECREF_PYTHON;
 	msg.session = 0;
 	msg.source = 0;
@@ -112,20 +112,20 @@ static int sigign() {
 
 void skynet_py_init(int (*p_uv_async_send)(void *), void * p_uv_async_t){
     // init queue
-	struct SkynetPyQueue *q = &(G_SKYNET_PY.recv_queue);
+	struct SkynetModifyQueue *q = &(G_SKYNET_MODIFY.recv_queue);
 	q->cap = 64;
 	q->head = 0;
 	q->tail = 0;
-	q->queue = skynet_malloc(sizeof(struct SkynetPyMessage) * q->cap);
+	q->queue = skynet_malloc(sizeof(struct SkynetModifyMessage) * q->cap);
 	SPIN_INIT(q);
 
     // init uv
-	G_SKYNET_PY.uv_async_send = p_uv_async_send;
-	G_SKYNET_PY.uv_async_handle = p_uv_async_t;
-	G_SKYNET_PY.uv_async_busy = 0;
-	G_SKYNET_PY.holder_context = NULL;
-	G_SKYNET_PY.holder_address = 0;
-	SPIN_INIT(&G_SKYNET_PY);
+	G_SKYNET_MODIFY.uv_async_send = p_uv_async_send;
+	G_SKYNET_MODIFY.uv_async_handle = p_uv_async_t;
+	G_SKYNET_MODIFY.uv_async_busy = 0;
+	G_SKYNET_MODIFY.holder_context = NULL;
+	G_SKYNET_MODIFY.holder_address = 0;
+	SPIN_INIT(&G_SKYNET_MODIFY);
 
 	skynet_globalinit();
 	skynet_env_init();
@@ -144,5 +144,5 @@ void skynet_py_init(int (*p_uv_async_send)(void *), void * p_uv_async_t){
 
 // if pyholder not started, return 0
 uint32_t skynet_py_address() {
-	return G_SKYNET_PY.holder_address;
+	return G_SKYNET_MODIFY.holder_address;
 }

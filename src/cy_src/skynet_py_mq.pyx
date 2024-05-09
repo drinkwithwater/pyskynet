@@ -8,7 +8,7 @@ from cpython.bytes cimport PyBytes_CheckExact, PyBytes_AS_STRING
 from libc.string cimport memcpy, strcmp
 from cpython.ref cimport Py_XDECREF, PyObject
 
-from skynet_py cimport *
+from skynet_modify cimport *
 
 
 cdef void free_pyptr(object capsule):
@@ -16,7 +16,7 @@ cdef void free_pyptr(object capsule):
     skynet_free(ptr)
 
 def crecv():
-    cdef SkynetPyMessage msg
+    cdef SkynetModifyMessage msg
     cdef int ret = skynet_py_queue_pop(&msg)
     while ret == 0 and msg.type == PTYPE_DECREF_PYTHON:
         Py_XDECREF(<PyObject*>msg.data)

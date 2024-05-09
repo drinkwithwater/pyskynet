@@ -44,7 +44,7 @@ cdef extern from "skynet_modify/skynet_modify.h":
         const char * bootstrap
         const char * logger
         const char * logservice
-    cdef struct SkynetPyMessage:
+    cdef struct SkynetModifyMessage:
         int type
         int session
         uint32_t source
@@ -54,7 +54,7 @@ cdef extern from "skynet_modify/skynet_modify.h":
         PTYPE_FOREIGN_REMOTE
         PTYPE_FOREIGN
         PTYPE_DECREF_PYTHON
-    int skynet_py_queue_pop(SkynetPyMessage * )
+    int skynet_py_queue_pop(SkynetModifyMessage * )
     int skynet_py_send(uint32_t dst, int type, int session, void* msg, size_t sz);
     int skynet_py_sendname(const char *dst, int type, int session, void* msg, size_t sz);
     void skynet_py_init(int (*p_uv_async_send)(void *), void * p_uv_async_t);

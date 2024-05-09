@@ -24,7 +24,7 @@ pyholder_release(struct pyholder * inst) {
 
 static int
 pyholder_cb(struct skynet_context * context, void *ud, int type, int session, uint32_t source, const void * data, size_t sz) {
-    struct SkynetPyMessage msg;
+    struct SkynetModifyMessage msg;
   msg.type = type;
 	msg.session = session;
 	msg.source = source;

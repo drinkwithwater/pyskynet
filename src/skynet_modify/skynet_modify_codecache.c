@@ -56,7 +56,7 @@ save_proto(const char *key, const void * proto) {
 }
 
 // cacheload(key:String, missGet:Fn():Ret(String), mode:OrNil(String), env:Any)
-int pyskynet_modify_cacheload(lua_State *L) {
+int skynet_modify_cacheload(lua_State *L) {
   // 1. if exist
   const char *filename = luaL_checkstring(L, 1);
   const char *mode = luaL_optstring(L, 3, NULL);

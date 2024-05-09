@@ -190,11 +190,11 @@ thread_worker(void *p) {
 // but we must destroy this call stack for python, so~ save these temp variables
 static void
 start(int thread) {
-	G_SKYNET_PY.temp_pids = skynet_malloc((thread+3)*sizeof(pthread_t));
-	pthread_t *pid = G_SKYNET_PY.temp_pids;
+	G_SKYNET_MODIFY.temp_pids = skynet_malloc((thread+3)*sizeof(pthread_t));
+	pthread_t *pid = G_SKYNET_MODIFY.temp_pids;
 
 	struct monitor *m = skynet_malloc(sizeof(struct monitor));
-	G_SKYNET_PY.temp_monitor = m;
+	G_SKYNET_MODIFY.temp_monitor = m;
 	memset(m, 0, sizeof(*m));
 	m->count = thread;
 	m->sleep = 0;
@@ -222,8 +222,8 @@ start(int thread) {
 		1, 1, 1, 1, 1, 1, 1, 1,
 		2, 2, 2, 2, 2, 2, 2, 2,
 		3, 3, 3, 3, 3, 3, 3, 3, };
-	G_SKYNET_PY.temp_wps = skynet_malloc(thread * sizeof(struct worker_parm));
-	struct worker_parm *wp = G_SKYNET_PY.temp_wps;
+	G_SKYNET_MODIFY.temp_wps = skynet_malloc(thread * sizeof(struct worker_parm));
+	struct worker_parm *wp = G_SKYNET_MODIFY.temp_wps;
 	for (i=0;i<thread;i++) {
 		wp[i].m = m;
 		wp[i].id = i;
@@ -294,8 +294,8 @@ void skynet_start(struct skynet_config * config) {
 
 	skynet_handle_namehandle(skynet_context_handle(pyholder_ctx), "python");
 
-	G_SKYNET_PY.holder_context = pyholder_ctx;
-	G_SKYNET_PY.holder_address = skynet_context_handle(pyholder_ctx);
+	G_SKYNET_MODIFY.holder_context = pyholder_ctx;
+	G_SKYNET_MODIFY.holder_address = skynet_context_handle(pyholder_ctx);
 
 	bootstrap(logger_ctx, config->bootstrap);
 
@@ -308,38 +308,38 @@ void skynet_py_start(struct skynet_config * config) {
 }
 
 void skynet_py_wakeup() {
-    struct monitor *m = G_SKYNET_PY.temp_monitor;
+    struct monitor *m = G_SKYNET_MODIFY.temp_monitor;
 	wakeup(m,0);
 }
 
 static void skynet_py_tryfree(){
 
-	SPIN_LOCK(&G_SKYNET_PY)
-    struct monitor *m = G_SKYNET_PY.temp_monitor;
-	G_SKYNET_PY.temp_monitor = NULL;
-	SPIN_UNLOCK(&G_SKYNET_PY)
+	SPIN_LOCK(&G_SKYNET_MODIFY)
+    struct monitor *m = G_SKYNET_MODIFY.temp_monitor;
+	G_SKYNET_MODIFY.temp_monitor = NULL;
+	SPIN_UNLOCK(&G_SKYNET_MODIFY)
 	if(m == NULL) {
 		return ;
 	} else {
 		free_monitor(m);
 	}
 
-    skynet_free(G_SKYNET_PY.temp_pids);
-    skynet_free(G_SKYNET_PY.temp_wps);
+    skynet_free(G_SKYNET_MODIFY.temp_pids);
+    skynet_free(G_SKYNET_MODIFY.temp_wps);
 
 	// harbor_exit may call socket send, so it should exit before socket_free
 	skynet_harbor_exit();
 	skynet_socket_free();
 	skynet_globalexit();
 
-	// TODO free other things in G_SKYNET_PY ?
+	// TODO free other things in G_SKYNET_MODIFY ?
 }
 
 // this function is useless
 void skynet_py_join() {
-    struct monitor *m = G_SKYNET_PY.temp_monitor;
+    struct monitor *m = G_SKYNET_MODIFY.temp_monitor;
     for(int i=0;i<m->count+3;i++){
-        pthread_t *pid = G_SKYNET_PY.temp_pids;
+        pthread_t *pid = G_SKYNET_MODIFY.temp_pids;
 		pthread_join(pid[i], NULL);
     }
 	skynet_py_tryfree();
@@ -347,9 +347,9 @@ void skynet_py_join() {
 
 void skynet_py_exit() {
 	// TODO, how to exit without Segmentation fault?
-    struct monitor *m = G_SKYNET_PY.temp_monitor;
+    struct monitor *m = G_SKYNET_MODIFY.temp_monitor;
     for(int i=0;i<m->count+3;i++){
-        pthread_t *pid = G_SKYNET_PY.temp_pids;
+        pthread_t *pid = G_SKYNET_MODIFY.temp_pids;
         //pthread_cancel(pid[i]);
     }
 	//skynet_py_tryfree();

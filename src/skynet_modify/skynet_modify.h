@@ -12,7 +12,7 @@
 #define PTYPE_FOREIGN 255
 #define PTYPE_DECREF_PYTHON 257 // bigger than 255 for diff with PTYPE in skynet.h
 
-struct SkynetPyMessage {
+struct SkynetModifyMessage {
 	int type;
 	int session;
 	uint32_t source;
@@ -20,20 +20,20 @@ struct SkynetPyMessage {
 	size_t size;
 };
 
-struct SkynetPyQueue {
+struct SkynetModifyQueue {
 	struct spinlock lock;
-	struct SkynetPyMessage *queue;
+	struct SkynetModifyMessage *queue;
 	int cap;
 	int head;
 	int tail;
 };
 
-struct SkynetPyGlobal {
+struct SkynetModifyGlobal {
 	// gevent item
 	void *uv_async_handle;
 	int (*uv_async_send)(void *);
 	int uv_async_busy;   // means python is busy with queue, don't need send async call
-	struct SkynetPyQueue recv_queue;  // queue
+	struct SkynetModifyQueue recv_queue;  // queue
 	// holder item
 	uint32_t holder_address;
 	struct skynet_context * holder_context;
@@ -44,10 +44,10 @@ struct SkynetPyGlobal {
 	void *temp_wps;
 };
 
-extern struct SkynetPyGlobal G_SKYNET_PY;
+extern struct SkynetModifyGlobal G_SKYNET_MODIFY;
 
-void skynet_py_queue_push(struct SkynetPyMessage* message); // return session
-int skynet_py_queue_pop(struct SkynetPyMessage* message); // return if empty 1 else 0
+void skynet_py_queue_push(struct SkynetModifyMessage* message); // return session
+int skynet_py_queue_pop(struct SkynetModifyMessage* message); // return if empty 1 else 0
 int skynet_py_send(uint32_t lua_destination, int type, int session, void* msg, size_t sz);
 int skynet_py_sendname(const char *lua_destination, int type, int session, void* msg, size_t sz);
 
@@ -68,7 +68,7 @@ const char *skynet_py_nextenv(const char *key);
 
 /* function in skynet_py_codecache.c */
 void skynet_modify_initcodecache(void);
-int pyskynet_modify_cacheload(lua_State *L);
+int skynet_modify_cacheload(lua_State *L);
 
 /* function in skynet_modify_scriptpool.c */
 void skynet_modify_initscriptpool(void);
