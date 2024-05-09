@@ -30,7 +30,7 @@ pyholder_cb(struct skynet_context * context, void *ud, int type, int session, ui
 	msg.source = source;
   msg.data = (void*)data;
   msg.size = sz;
-	skynet_py_queue_push(&msg);
+	skynet_modify_msg_queue_push(&msg);
 	// return 1 means reserve message @ skynet_server.c ctx->cb
 	// free data by python
 	return 1;

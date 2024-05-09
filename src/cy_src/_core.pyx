@@ -10,7 +10,62 @@ from libc.string cimport memcpy, strcmp
 from cpython.ref cimport Py_XDECREF, PyObject
 from libc.stdio cimport sscanf, sprintf
 
-from skynet_modify cimport *
+cdef extern from "skynet.h":
+    ctypedef int int64_t
+    ctypedef int int32_t
+    ctypedef int uint32_t
+    ctypedef int uint16_t
+    ctypedef int uint8_t
+    void skynet_free(void *)
+    cdef enum:
+        PTYPE_TEXT
+        PTYPE_RESPONSE
+        PTYPE_MULTICAST
+        PTYPE_CLIENT
+        PTYPE_SYSTEM
+        PTYPE_HARBOR
+        PTYPE_SOCKET
+        PTYPE_ERROR
+        PTYPE_RESERVED_QUEUE
+        PTYPE_RESERVED_DEBUG
+        PTYPE_RESERVED_LUA
+        PTYPE_RESERVED_SNAX
+        PTYPE_TAG_ALLOCSESSION
+        PTYPE_TAG_DONTCOPY
+
+cdef extern from "skynet_modify/skynet_modify.h":
+    cdef struct skynet_config:
+        int thread
+        int harbor
+        int profile
+        const char * daemon
+        const char * module_path
+        const char * bootstrap
+        const char * logger
+        const char * logservice
+    cdef struct SkynetModifyMessage:
+        int type
+        int session
+        uint32_t source
+        void * data
+        size_t size
+    cdef struct SkynetModifyQueue:
+        pass
+    cdef struct SkynetModifyGlobal:
+        pass
+        #struct SkynetModifyQueue msg_queue
+        #struct SkynetModifyQueue ctrl_queue
+    cdef enum:
+        PTYPE_FOREIGN_REMOTE
+        PTYPE_FOREIGN
+        PTYPE_DECREF_PYTHON
+    int skynet_modify_ctrl_queue_pop(SkynetModifyMessage * )
+    int skynet_modify_msg_queue_pop(SkynetModifyMessage * )
+    int skynet_py_send(uint32_t dst, int type, int session, void* msg, size_t sz);
+    int skynet_py_sendname(const char *dst, int type, int session, void* msg, size_t sz);
+    void skynet_modify_init(int (*p_uv_async_send)(void *), void* msg_async_t, void* ctrl_async_t);
+    void skynet_modify_start(skynet_config * config)
+    uint32_t skynet_modify_address();
 
 cdef extern from "skynet_env.h":
     const char * skynet_getenv(const char *key);
@@ -24,14 +79,15 @@ cdef extern from "skynet_modify/skynet_modify.h":
 
 ctypedef (char *)(* f_type)(object, object)
 
-def init(ffi, async_send, async_handle):
+def init(ffi, async_send, msg_watcher, ctrl_watcher):
     # because gevent's libuv bind with cffi, so we can get pointer by this way
     cdef void ** _cffi_exports = <void **>PyCapsule_GetPointer(_cffi_backend._C_API, "cffi")
     # get the '_cffi_to_c_pointer' function in _cffi_include.h of cffi
     cdef f_type _cffi_to_c_pointer = <f_type>_cffi_exports[11]
     skynet_modify_init(
             <int (*)(void*)>_cffi_to_c_pointer(async_send, ffi.typeof(async_send)),
-            <void *>_cffi_to_c_pointer(async_handle, ffi.typeof(async_handle))
+            <void *>_cffi_to_c_pointer(msg_watcher, ffi.typeof(msg_watcher)),
+            <void *>_cffi_to_c_pointer(ctrl_watcher, ffi.typeof(ctrl_watcher))
             )
 
 cdef __check_bytes(s):
@@ -122,10 +178,10 @@ cdef void free_pyptr(object capsule):
 
 def crecv():
     cdef SkynetModifyMessage msg
-    cdef int ret = skynet_py_queue_pop(&msg)
+    cdef int ret = skynet_modify_msg_queue_pop(&msg)
     while ret == 0 and msg.type == PTYPE_DECREF_PYTHON:
         Py_XDECREF(<PyObject*>msg.data)
-        ret = skynet_py_queue_pop(&msg)
+        ret = skynet_modify_msg_queue_pop(&msg)
     if ret != 0:
         return None, None, None, None, None
     else:
@@ -134,6 +190,21 @@ def crecv():
             return msg.source, msg.type, msg.session, PyCapsule_New(msg.data, "pyptr", free_pyptr), msg.size
         else:
             return msg.source, msg.type, msg.session, b"", 0
+
+def ctrl_pop_log():
+    cdef SkynetModifyMessage msg
+    cdef int ret = skynet_modify_ctrl_queue_pop(&msg)
+    while ret == 0 and msg.type == PTYPE_DECREF_PYTHON:
+        Py_XDECREF(<PyObject*>msg.data)
+        ret = skynet_modify_msg_queue_pop(&msg)
+    cdef char* data = <char*>msg.data
+    cdef int sz = msg.size
+    if ret != 0:
+        return None
+    elif data == NULL:
+        return None
+    else:
+        return data[:sz]
 
 # see lsend in lua-skynet.c
 def csend(py_dst, int type_id, py_session, py_msg, py_size=None):

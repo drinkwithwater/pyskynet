@@ -111,7 +111,7 @@ const char *skynet_getenv(const char *key) {
 				return buffer + 5;
 			}
 		} else {
-			printf("pyskynet getenv but format error \n");
+			printf("pyskynet getenv but format error, env key='%s'\n", key);
 		}
 		return NULL;
 	}

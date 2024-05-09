@@ -20,20 +20,22 @@ struct SkynetModifyMessage {
 	size_t size;
 };
 
+// queue to communicate with python
 struct SkynetModifyQueue {
 	struct spinlock lock;
 	struct SkynetModifyMessage *queue;
 	int cap;
 	int head;
 	int tail;
-};
-
-struct SkynetModifyGlobal {
 	// gevent item
 	void *uv_async_handle;
 	int (*uv_async_send)(void *);
 	int uv_async_busy;   // means python is busy with queue, don't need send async call
-	struct SkynetModifyQueue recv_queue;  // queue
+};
+
+struct SkynetModifyGlobal {
+	struct SkynetModifyQueue msg_queue;  // queue for message
+	struct SkynetModifyQueue ctrl_queue;  // queue for log & dec
 	// holder item
 	uint32_t holder_address;
 	struct skynet_context * holder_context;
@@ -45,14 +47,17 @@ struct SkynetModifyGlobal {
 
 extern struct SkynetModifyGlobal G_SKYNET_MODIFY;
 
-void skynet_py_queue_push(struct SkynetModifyMessage* message); // return session
-int skynet_py_queue_pop(struct SkynetModifyMessage* message); // return if empty 1 else 0
 int skynet_py_send(uint32_t lua_destination, int type, int session, void* msg, size_t sz);
 int skynet_py_sendname(const char *lua_destination, int type, int session, void* msg, size_t sz);
 
-void skynet_py_decref_python(void * pyobj); // decref python object, called by foreign
 uint32_t skynet_modify_address(); // get pyholder's address
-void skynet_modify_init(int (*p_uv_async_send)(void *), void * p_uv_async_t); // binding libuv items
+void skynet_modify_init(int (*p_uv_async_send)(void *), void* msg_async_t, void* ctrl_async_t); // binding libuv items
+
+/* function in skynet_modify_queue.c */
+void skynet_py_decref_python(void * pyobj); // decref python object, called by foreign
+int skynet_modify_ctrl_queue_pop(struct SkynetModifyMessage* message); // return if empty 1 else 0
+int skynet_modify_msg_queue_pop(struct SkynetModifyMessage* message); // return if empty 1 else 0
+void skynet_modify_msg_queue_push(struct SkynetModifyMessage* message); // return session
 
 /* function in skynet_start_modify.c */
 void skynet_modify_start(struct skynet_config * config);
