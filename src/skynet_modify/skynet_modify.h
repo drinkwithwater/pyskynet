@@ -47,25 +47,20 @@ struct SkynetModifyGlobal {
 
 extern struct SkynetModifyGlobal G_SKYNET_MODIFY;
 
-int skynet_py_send(uint32_t lua_destination, int type, int session, void* msg, size_t sz);
-int skynet_py_sendname(const char *lua_destination, int type, int session, void* msg, size_t sz);
-
-uint32_t skynet_modify_address(); // get pyholder's address
 void skynet_modify_init(int (*p_uv_async_send)(void *), void* msg_async_t, void* ctrl_async_t); // binding libuv items
 
 /* function in skynet_modify_queue.c */
-void skynet_py_decref_python(void * pyobj); // decref python object, called by foreign
-int skynet_modify_ctrl_queue_pop(struct SkynetModifyMessage* message); // return if empty 1 else 0
-int skynet_modify_msg_queue_pop(struct SkynetModifyMessage* message); // return if empty 1 else 0
-void skynet_modify_msg_queue_push(struct SkynetModifyMessage* message); // return session
+void skynet_modify_decref_python(void * pyobj); // decref python object, called by foreign
+int skynet_modify_queue_pop(struct SkynetModifyQueue* queue, struct SkynetModifyMessage* message); // return if empty 1 else 0
+void skynet_modify_queue_push(struct SkynetModifyQueue* queue, struct SkynetModifyMessage* message); // return session
 
 /* function in skynet_start_modify.c */
 void skynet_modify_start(struct skynet_config * config);
 void skynet_modify_wakeup();
 
 /* function in skynet_env_modify.c */
-int skynet_py_setlenv(const char *key, const char *value_str, size_t sz);
-const char *skynet_py_getlenv(const char *key, size_t *sz);
+int skynet_modify_setlenv(const char *key, const char *value_str, size_t sz);
+const char *skynet_modify_getlenv(const char *key, size_t *sz);
 const char *skynet_py_nextenv(const char *key);
 
 /* function in skynet_py_codecache.c */

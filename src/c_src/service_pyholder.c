@@ -23,14 +23,14 @@ pyholder_release(struct pyholder * inst) {
 }
 
 static int
-pyholder_cb(struct skynet_context * context, void *ud, int type, int session, uint32_t source, const void * data, size_t sz) {
-    struct SkynetModifyMessage msg;
-  msg.type = type;
+pyholder_cb(struct skynet_context *context, void *ud, int type, int session, uint32_t source, const void *data, size_t sz) {
+	struct SkynetModifyMessage msg;
+	msg.type = type;
 	msg.session = session;
 	msg.source = source;
-  msg.data = (void*)data;
-  msg.size = sz;
-	skynet_modify_msg_queue_push(&msg);
+	msg.data = (void *)data;
+	msg.size = sz;
+	skynet_modify_queue_push(&(G_SKYNET_MODIFY.msg_queue), &msg);
 	// return 1 means reserve message @ skynet_server.c ctx->cb
 	// free data by python
 	return 1;

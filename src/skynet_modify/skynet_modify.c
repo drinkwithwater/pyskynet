@@ -13,18 +13,6 @@
 
 struct SkynetModifyGlobal G_SKYNET_MODIFY;
 
-int skynet_py_send(uint32_t lua_destination, int type, int session, void* msg, size_t sz){
-    int real_session = skynet_send(G_SKYNET_MODIFY.holder_context, G_SKYNET_MODIFY.holder_address, lua_destination, type, session, msg, sz);
-    skynet_modify_wakeup();
-    return real_session;
-}
-
-int skynet_py_sendname(const char *lua_destination, int type, int session, void* msg, size_t sz){
-    int real_session = skynet_sendname(G_SKYNET_MODIFY.holder_context, G_SKYNET_MODIFY.holder_address, lua_destination, type, session, msg, sz);
-    skynet_modify_wakeup();
-    return real_session;
-}
-
 static int sigign() {
 	struct sigaction sa;
 	sa.sa_handler = SIG_IGN;
@@ -68,9 +56,4 @@ void skynet_modify_init(int (*p_uv_async_send)(void *), void* msg_async_t, void*
 	skynet_modify_initscriptpool();
 #endif
 
-}
-
-// if pyholder not started, return 0
-uint32_t skynet_modify_address() {
-	return G_SKYNET_MODIFY.holder_address;
 }

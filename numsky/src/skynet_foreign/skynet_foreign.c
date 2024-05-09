@@ -1,7 +1,7 @@
 
 #include "skynet_foreign/skynet_foreign.h"
 #ifdef BUILD_FOR_PYSKYNET
-#include "skynet_modify/skynet_modify.h" // for include skynet_py_decref_python
+#include "skynet_modify/skynet_modify.h" // for include skynet_modify_decref_python
 #endif
 
 #include <stdio.h>
@@ -9,7 +9,7 @@
 static inline void skynet_foreign_delete(struct skynet_foreign *obj){
 #ifdef BUILD_FOR_PYSKYNET
     if(obj->ref_obj != NULL) {
-        skynet_py_decref_python(obj->ref_obj);
+        skynet_modify_decref_python(obj->ref_obj);
     }
 #endif
     SPIN_DESTROY(obj);

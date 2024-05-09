@@ -9,7 +9,7 @@
 #include <signal.h>
 
 // code just like skynet_mq.c
-static void queue_push(struct SkynetModifyQueue* q, struct SkynetModifyMessage *message) {
+void skynet_modify_queue_push(struct SkynetModifyQueue* q, struct SkynetModifyMessage *message) {
 	int uv_async_busy = 0;
 	SPIN_LOCK(q)
 	// push into queue
@@ -45,7 +45,7 @@ static void queue_push(struct SkynetModifyQueue* q, struct SkynetModifyMessage *
 }
 
 // code just like skynet_mq.c
-static int queue_pop(struct SkynetModifyQueue* q, struct SkynetModifyMessage *message){
+int skynet_modify_queue_pop(struct SkynetModifyQueue* q, struct SkynetModifyMessage *message){
 	int ret = 1;
 	SPIN_LOCK(q)
 
@@ -73,24 +73,12 @@ static int queue_pop(struct SkynetModifyQueue* q, struct SkynetModifyMessage *me
 	return ret;
 }
 
-void skynet_modify_msg_queue_push(struct SkynetModifyMessage *message){
-	queue_push(&(G_SKYNET_MODIFY.msg_queue), message);
-}
-
-int skynet_modify_msg_queue_pop(struct SkynetModifyMessage *message){
-	return queue_pop(&(G_SKYNET_MODIFY.msg_queue), message);
-}
-
-int skynet_modify_ctrl_queue_pop(struct SkynetModifyMessage *message){
-	return queue_pop(&(G_SKYNET_MODIFY.ctrl_queue), message);
-}
-
-void skynet_py_decref_python(void * pyobj) {
+void skynet_modify_decref_python(void * pyobj) {
 	struct SkynetModifyMessage msg;
     msg.type = PTYPE_DECREF_PYTHON;
 	msg.session = 0;
 	msg.source = 0;
     msg.data = pyobj;
     msg.size = 0;
-	queue_push(&(G_SKYNET_MODIFY.msg_queue), &msg);
+	skynet_modify_queue_push(&(G_SKYNET_MODIFY.msg_queue), &msg);
 }

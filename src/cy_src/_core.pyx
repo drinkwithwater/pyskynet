@@ -32,8 +32,12 @@ cdef extern from "skynet.h":
         PTYPE_RESERVED_SNAX
         PTYPE_TAG_ALLOCSESSION
         PTYPE_TAG_DONTCOPY
+    int skynet_send(skynet_context* ctx, uint32_t src, uint32_t dst, int type, int session, void* msg, size_t sz);
+    int skynet_sendname(skynet_context* ctx, uint32_t src, const char *dst, int type, int session, void* msg, size_t sz);
 
 cdef extern from "skynet_modify/skynet_modify.h":
+    cdef struct skynet_context:
+        pass
     cdef struct skynet_config:
         int thread
         int harbor
@@ -52,30 +56,28 @@ cdef extern from "skynet_modify/skynet_modify.h":
     cdef struct SkynetModifyQueue:
         pass
     cdef struct SkynetModifyGlobal:
-        pass
-        #struct SkynetModifyQueue msg_queue
-        #struct SkynetModifyQueue ctrl_queue
+        SkynetModifyQueue msg_queue
+        SkynetModifyQueue ctrl_queue
+        uint32_t holder_address;
+        skynet_context * holder_context;
+    SkynetModifyGlobal G_SKYNET_MODIFY
     cdef enum:
         PTYPE_FOREIGN_REMOTE
         PTYPE_FOREIGN
         PTYPE_DECREF_PYTHON
-    int skynet_modify_ctrl_queue_pop(SkynetModifyMessage * )
-    int skynet_modify_msg_queue_pop(SkynetModifyMessage * )
-    int skynet_py_send(uint32_t dst, int type, int session, void* msg, size_t sz);
-    int skynet_py_sendname(const char *dst, int type, int session, void* msg, size_t sz);
+    int skynet_modify_queue_pop(SkynetModifyQueue* queue, SkynetModifyMessage* message); # return 1 if empty else 0
     void skynet_modify_init(int (*p_uv_async_send)(void *), void* msg_async_t, void* ctrl_async_t);
     void skynet_modify_start(skynet_config * config)
-    uint32_t skynet_modify_address();
+    void skynet_modify_wakeup();
+    int skynet_modify_setlenv(const char *key, const char *value_str, size_t sz)
+    const char *skynet_modify_getlenv(const char *key, size_t *sz);
+    const char *skynet_py_nextenv(const char *key)
+    const char *skynet_modify_getscript(int index, size_t *sz);
+    int skynet_modify_refscript(const char*key, size_t sz);
 
 cdef extern from "skynet_env.h":
     const char * skynet_getenv(const char *key);
 
-cdef extern from "skynet_modify/skynet_modify.h":
-    int skynet_py_setlenv(const char *key, const char *value_str, size_t sz)
-    const char *skynet_py_getlenv(const char *key, size_t *sz);
-    const char *skynet_py_nextenv(const char *key)
-    const char *skynet_modify_getscript(int index, size_t *sz);
-    int skynet_modify_refscript(const char*key, size_t sz);
 
 ctypedef (char *)(* f_type)(object, object)
 
@@ -111,7 +113,7 @@ def setlenv(key, capsule_or_bytes, py_sz=None):
     else:
         raise Exception("skynet_py env value must be bytes or pointer")
     key = __check_bytes(key)
-    cdef int ret = skynet_py_setlenv(key, ptr, sz)
+    cdef int ret = skynet_modify_setlenv(key, ptr, sz)
     if ret != 0:
         raise Exception("setlenv but key conflict")
 
@@ -120,7 +122,7 @@ def setlenv(key, capsule_or_bytes, py_sz=None):
 def getlenv(key):
     key = __check_bytes(key)
     cdef size_t sz
-    cdef const char * value = skynet_py_getlenv(key, &sz);
+    cdef const char * value = skynet_modify_getlenv(key, &sz);
     if value != NULL:
         return PyBytes_FromStringAndSize(value, sz);
     else:
@@ -165,8 +167,9 @@ def start(int thread, int profile):
     config.daemon = NULL # just ignore daemon
     skynet_modify_start(&config)
 
+# if pyholder not started, return 0
 def self():
-    return skynet_modify_address()
+    return G_SKYNET_MODIFY.holder_address;
 
 ##########################
 # functions for messages #
@@ -178,10 +181,10 @@ cdef void free_pyptr(object capsule):
 
 def crecv():
     cdef SkynetModifyMessage msg
-    cdef int ret = skynet_modify_msg_queue_pop(&msg)
+    cdef int ret = skynet_modify_queue_pop(&G_SKYNET_MODIFY.msg_queue, &msg)
     while ret == 0 and msg.type == PTYPE_DECREF_PYTHON:
         Py_XDECREF(<PyObject*>msg.data)
-        ret = skynet_modify_msg_queue_pop(&msg)
+        ret = skynet_modify_queue_pop(&G_SKYNET_MODIFY.msg_queue, &msg)
     if ret != 0:
         return None, None, None, None, None
     else:
@@ -193,10 +196,10 @@ def crecv():
 
 def ctrl_pop_log():
     cdef SkynetModifyMessage msg
-    cdef int ret = skynet_modify_ctrl_queue_pop(&msg)
+    cdef int ret = skynet_modify_queue_pop(&G_SKYNET_MODIFY.ctrl_queue, &msg)
     while ret == 0 and msg.type == PTYPE_DECREF_PYTHON:
         Py_XDECREF(<PyObject*>msg.data)
-        ret = skynet_modify_msg_queue_pop(&msg)
+        ret = skynet_modify_queue_pop(&G_SKYNET_MODIFY.ctrl_queue, &msg)
     cdef char* data = <char*>msg.data
     cdef int sz = msg.size
     if ret != 0:
@@ -208,7 +211,7 @@ def ctrl_pop_log():
 
 # see lsend in lua-skynet.c
 def csend(py_dst, int type_id, py_session, py_msg, py_size=None):
-    assert skynet_modify_address() > 0, "skynet threads has not been started yet, call 'pyskynet.start()' first."
+    assert G_SKYNET_MODIFY.holder_address > 0, "skynet threads has not been started yet, call 'pyskynet.start()' first."
     # 1. check dst
     cdef char * dstname = NULL
     cdef int dst = 0
@@ -244,9 +247,11 @@ def csend(py_dst, int type_id, py_session, py_msg, py_size=None):
         raise Exception("type:%s unexcept when skynet csend"%type(py_msg))
 
     if dstname == NULL:
-        session = skynet_py_send(dst, type_id, session, ptr, size)
+        session = skynet_send(G_SKYNET_MODIFY.holder_context, G_SKYNET_MODIFY.holder_address, dst, type_id, session, ptr, size)
     else:
-        session = skynet_py_sendname(dstname, type_id, session, ptr, size)
+        session = skynet_sendname(G_SKYNET_MODIFY.holder_context, G_SKYNET_MODIFY.holder_address, dstname, type_id, session, ptr, size)
+    skynet_modify_wakeup()
+
     if session < 0:
         if session == -2:
             raise Exception("package is too large:%s"%session)

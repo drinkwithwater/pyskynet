@@ -23,7 +23,7 @@ struct skynet_env {
 
 static struct skynet_env *E = NULL;
 
-const char *skynet_py_getlenv(const char *key, size_t *sz) {
+const char *skynet_modify_getlenv(const char *key, size_t *sz) {
 	SPIN_LOCK(E);
 	lua_State *L = E->L;
 	lua_getglobal(L, key);
@@ -40,7 +40,7 @@ const char *skynet_py_getlenv(const char *key, size_t *sz) {
 }
 
 // if conflict, return -1 else return 0
-int skynet_py_setlenv(const char *key, const char *value_str, size_t sz) {
+int skynet_modify_setlenv(const char *key, const char *value_str, size_t sz) {
 	SPIN_LOCK(E)
 
 	lua_State *L = E->L;
@@ -95,7 +95,7 @@ void skynet_env_init() {
 // for skynet_env.h
 const char *skynet_getenv(const char *key) {
 	size_t sz;
-	const char *buffer = skynet_py_getlenv(key, &sz);
+	const char *buffer = skynet_modify_getlenv(key, &sz);
 	if(buffer==NULL || sz <= 0) {
 		return NULL;
 	} else {
@@ -143,6 +143,6 @@ void skynet_setenv(const char *key, const char* value_str) {
 		}
 	}
 	ptr = buffer_write(ptr, value_str, len);
-	skynet_py_setlenv(key, buffer, ptr - buffer);
+	skynet_modify_setlenv(key, buffer, ptr - buffer);
 	skynet_free(buffer);
 }

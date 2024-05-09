@@ -17,7 +17,7 @@ static int
 lgetlenv(lua_State *L) {
     const char *key = luaL_checkstring(L, 1);
     size_t sz;
-    const char *value = skynet_py_getlenv(key, &sz);
+    const char *value = skynet_modify_getlenv(key, &sz);
     if(value != NULL) {
         lua_pushlstring(L, value, sz);
         return 1;
@@ -35,7 +35,7 @@ lsetlenv(lua_State *L) {
     case LUA_TSTRING: {
         size_t sz;
 		const char *value = lua_tolstring(L, 2, &sz);
-		conflict = skynet_py_setlenv(key, value, sz) != 0;
+		conflict = skynet_modify_setlenv(key, value, sz) != 0;
 		break;
 	 }
     case LUA_TLIGHTUSERDATA: {
@@ -44,7 +44,7 @@ lsetlenv(lua_State *L) {
         if(sz < 0) {
             return luaL_error(L, "setlenv but size < 0 %d", sz);
         } else {
-            conflict = skynet_py_setlenv(key, value, sz) != 0;
+            conflict = skynet_modify_setlenv(key, value, sz) != 0;
         }
 	    break;
 	 }
