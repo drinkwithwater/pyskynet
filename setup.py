@@ -4,9 +4,9 @@ from distutils.command.build import build
 from setup_ext import *
 
 def create_cython_extensions():
-    ext_main = Extension('pyskynet.skynet_py_main',
+    ext_main = Extension('pyskynet._core',
         include_dirs=INCLUDE_DIRS,
-        sources=['src/cy_src/skynet_py_main.pyx'] +
+        sources=['src/cy_src/_core.pyx'] +
                 list_path(SKYNET_SRC_PATH, ".c", ["skynet_main.c", "skynet_start.c", "skynet_env.c", "skynet_server.c"]) +
                 list_path("src/skynet_modify", ".c") +
                 list_path("numsky/src/skynet_foreign/", ".c") +
@@ -16,22 +16,15 @@ def create_cython_extensions():
         libraries=LIBRARIES,
         extra_objects=[])
 
-    ext_seri = Extension('pyskynet.skynet_py_foreign_seri',
+    ext_seri = Extension('pyskynet._foreign_seri',
         include_dirs=INCLUDE_DIRS,
-        sources=['src/cy_src/skynet_py_foreign_seri.pyx'] +
+        sources=['src/cy_src/_foreign_seri.pyx'] +
                 list_path('numsky/src/foreign_seri/', '.c', ["lua-foreign_seri.c"]),
         depends=['src/cy_src/skynet_modify.pxd'],
         define_macros=MACROS,
         libraries=LIBRARIES)
 
-    ext_mq = Extension('pyskynet.skynet_py_mq',
-        include_dirs=INCLUDE_DIRS,
-        sources=['src/cy_src/skynet_py_mq.pyx'],
-        depends=['src/cy_src/skynet_modify.pxd'],
-        define_macros=MACROS,
-        libraries=LIBRARIES)
-
-    return [ext_main, ext_mq, ext_seri]
+    return [ext_main, ext_seri]
 
 
 class build_with_numpy_cython(build):
@@ -55,7 +48,7 @@ class build_ext_rename(build_ext):
     def get_ext_filename(self, ext_name):
         ext_name_last = ext_name.split(".")[-1]
         # cython library start with skynet_py
-        if ext_name_last.find("skynet_py_") == 0:
+        if ext_name_last.find("_core") == 0 or ext_name_last.find("_foreign_seri") == 0:
             # for cython library
             return super().get_ext_filename(ext_name)
         else:

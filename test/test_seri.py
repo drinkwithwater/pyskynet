@@ -3,7 +3,7 @@ import sys
 sys.path.append("../")
 
 import pyskynet.foreign as foreign
-import pyskynet.skynet_py_foreign_seri as foreign_seri
+import pyskynet._foreign_seri as foreign_seri
 
 import numpy as np
 

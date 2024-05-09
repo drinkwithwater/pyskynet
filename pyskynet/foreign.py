@@ -1,11 +1,11 @@
 
-import pyskynet.skynet_py_foreign_seri as foreign_seri
+import pyskynet._foreign_seri as foreign_seri
 import pyskynet.skynet as skynet
-import pyskynet.skynet_py_mq as skynet_py_mq
+import pyskynet._core as _core
 
 
-PTYPE_FOREIGN = skynet_py_mq.PTYPE_FOREIGN
-PTYPE_FOREIGN_REMOTE = skynet_py_mq.PTYPE_FOREIGN_REMOTE
+PTYPE_FOREIGN = _core.PTYPE_FOREIGN
+PTYPE_FOREIGN_REMOTE = _core.PTYPE_FOREIGN_REMOTE
 
 
 class CMDDispatcher(object):

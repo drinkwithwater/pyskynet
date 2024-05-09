@@ -3,9 +3,9 @@
 # some api different from lua #
 ###############################
 from pyskynet.boot import config, start_with_settings, gevent
-import pyskynet.skynet_py_mq
+import pyskynet._core
 import pyskynet.foreign as foreign
-import pyskynet.skynet_py_main as skynet_py_main
+import pyskynet._core as _core
 import pyskynet.skynet as skynet
 import inspect
 from typing import Dict, Any
@@ -31,7 +31,7 @@ __all__ = [
     "settings",
 ]
 
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 settings:Dict[str, Any] = {}
 
 def start():
@@ -59,7 +59,7 @@ def uniqueservice(service_name, *args):
 
 
 def scriptservice(scriptCode, *args):
-    scriptIndex = skynet_py_main.refscript(scriptCode)
+    scriptIndex = _core.refscript(scriptCode)
     frameinfo = inspect.getframeinfo(inspect.currentframe().f_back)
     scriptName = frameinfo.filename + ":" + str(frameinfo.lineno)
     return newservice("script_service", scriptName, str(scriptIndex), *args)
@@ -86,7 +86,7 @@ def scriptservice(scriptCode, *args):
 
 
 def self():
-    address = skynet_py_main.self()
+    address = _core.self()
     assert address > 0, "service pyholder not start "
     return address
 
@@ -94,7 +94,7 @@ __python_exit = exit
 
 
 def exit():
-    skynet_py_main.exit()
+    _core.exit()
     __python_exit()
 
 __join_event = gevent.event.Event()
@@ -102,4 +102,4 @@ __join_event = gevent.event.Event()
 def join():
     gevent.signal_handler(gevent.signal.SIGINT, __join_event.set)
     __join_event.wait()
-    skynet_py_main.exit()
+    _core.exit()

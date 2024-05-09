@@ -14,15 +14,24 @@ import numpy as np
 cimport numpy as cnp
 cnp.import_array()
 
-from skynet_modify cimport *
-
 DEF BLOCK_SIZE = 128
 
 cdef extern from "pyskynet_foreign_seri_ext.c": #from "lua-foreign_seri.c":
+    ctypedef int lua_Integer
+    cdef struct skynet_foreign:
+        pass
+
+    ctypedef int int64_t
+    ctypedef int int32_t
+    ctypedef int uint32_t
+    ctypedef int uint16_t
+    ctypedef int uint8_t
     cdef enum:
         MODE_LUA
         MODE_FOREIGN
         MODE_FOREIGN_REMOTE
+
+    void skynet_free(void *)
 
     # for read
     uint8_t COMBINE_TYPE(uint8_t, uint8_t)

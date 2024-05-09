@@ -1,16 +1,16 @@
 
-import pyskynet.skynet_py_mq as skynet_py_mq
-import pyskynet.skynet_py_foreign_seri as foreign_seri
+import pyskynet._core as _core
+import pyskynet._foreign_seri as foreign_seri
 import gevent
 from gevent.event import AsyncResult
 import traceback
 
-PTYPE_TEXT = skynet_py_mq.SKYNET_PTYPE.PTYPE_TEXT
-PTYPE_CLIENT = skynet_py_mq.SKYNET_PTYPE.PTYPE_CLIENT
-PTYPE_SOCKET = skynet_py_mq.SKYNET_PTYPE.PTYPE_SOCKET
-PTYPE_LUA = skynet_py_mq.SKYNET_PTYPE.PTYPE_LUA
+PTYPE_TEXT = _core.SKYNET_PTYPE.PTYPE_TEXT
+PTYPE_CLIENT = _core.SKYNET_PTYPE.PTYPE_CLIENT
+PTYPE_SOCKET = _core.SKYNET_PTYPE.PTYPE_SOCKET
+PTYPE_LUA = _core.SKYNET_PTYPE.PTYPE_LUA
 
-SKYNET_PTYPE = skynet_py_mq.SKYNET_PTYPE
+SKYNET_PTYPE = _core.SKYNET_PTYPE
 
 #####################
 # py<->skynet proto #
@@ -98,7 +98,7 @@ def rawcall(dst, type_name_or_id, msg_ptr, msg_size):
         rawcall in skynet.lua, rpc call
     """
     psproto = pyskynet_proto_dict[type_name_or_id]
-    session = skynet_py_mq.csend(dst, psproto.id, None, msg_ptr, msg_size)
+    session = _core.csend(dst, psproto.id, None, msg_ptr, msg_size)
     if session is None:
         raise PySkynetCallException("send to invalid address %08x" % dst)
     ar = AsyncResult()
@@ -117,7 +117,7 @@ def rawsend(dst, type_name_or_id, msg_ptr, msg_size):
         rawsend in skynet.lua, send don't need ret
     """
     psproto = pyskynet_proto_dict[type_name_or_id]
-    return skynet_py_mq.csend(dst, psproto.id, 0, msg_ptr, msg_size)
+    return _core.csend(dst, psproto.id, 0, msg_ptr, msg_size)
 
 
 # skynet.lua
@@ -145,7 +145,7 @@ def ret(ret_msg_ptr, ret_size):
     if session == 0:
         return False
     else:
-        return skynet_py_mq.csend(source, SKYNET_PTYPE.PTYPE_RESPONSE, session, ret_msg_ptr, ret_size) is not None
+        return _core.csend(source, SKYNET_PTYPE.PTYPE_RESPONSE, session, ret_msg_ptr, ret_size) is not None
 
 
 ################
@@ -155,7 +155,7 @@ def __async_handle():
     """
         python actor's main loop, recv and deal message
     """
-    source, type_id, session, ptr, length = skynet_py_mq.crecv()
+    source, type_id, session, ptr, length = _core.crecv()
     if source is None:
         return
     else:
@@ -173,7 +173,7 @@ def __async_handle():
             psproto = pyskynet_proto_dict[type_id]
         except KeyError as e:
             if session != 0:
-                skynet_py_mq.csend(source, SKYNET_PTYPE.PTYPE_ERROR, session, "")
+                _core.csend(source, SKYNET_PTYPE.PTYPE_ERROR, session, "")
             else:
                 hook_print("[ERROR] unknown request with unexcept type_id %s, session: %d from %x"%(type_id, session, source))
             return
@@ -190,14 +190,14 @@ def __async_handle():
                     co_to_remote_address.pop(co)
             except Exception as e:
                 if session != 0:
-                    skynet_py_mq.csend(source, SKYNET_PTYPE.PTYPE_ERROR, session, "")
+                    _core.csend(source, SKYNET_PTYPE.PTYPE_ERROR, session, "")
                 hook_print("[ERROR]", traceback.format_exc())
                 if co in co_to_remote_session:
                     co_to_remote_session.pop(co)
                     co_to_remote_address.pop(co)
         else:
             if session != 0:
-                skynet_py_mq.csend(source, SKYNET_PTYPE.PTYPE_ERROR, session, "")
+                _core.csend(source, SKYNET_PTYPE.PTYPE_ERROR, session, "")
             else:
                 hook_print("[ERROR] request with dispatch not callable, session: %d from %x"%(session, address))
             return

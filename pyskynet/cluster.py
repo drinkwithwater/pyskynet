@@ -4,7 +4,7 @@ import pyskynet
 
 import pyskynet.boot
 import pyskynet.skynet as skynet
-from pyskynet.skynet_py_foreign_seri import remotepack, remoteunpack, luapack
+from pyskynet._foreign_seri import remotepack, remoteunpack, luapack
 import gevent
 import gevent.event
 

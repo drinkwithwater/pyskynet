@@ -11,14 +11,14 @@ import gevent.signal
 # 2. dlopen with flags RTLD_GLOBAL
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | os.RTLD_GLOBAL)
-import pyskynet.skynet_py_main as skynet_py_main
+import pyskynet._core as _core
 sys.setdlopenflags(flags)
 
 # 3. some module
 import pyskynet.config as config
 import pyskynet.foreign as foreign
-import pyskynet.skynet_py_foreign_seri
-import pyskynet.skynet_py_mq as skynet_py_mq
+import pyskynet._foreign_seri
+import pyskynet._core as _core
 from typing import Dict, Any
 
 ####################
@@ -26,7 +26,7 @@ from typing import Dict, Any
 ####################
 
 def getenv(key):
-    data = skynet_py_main.getlenv(key)
+    data = _core.getlenv(key)
     if data is None:
         return None
     else:
@@ -34,10 +34,10 @@ def getenv(key):
 
 
 def setenv(key, value):
-    if skynet_py_main.self() != 0:
+    if _core.self() != 0:
         assert (key is None) or (getenv(key) is None), "Can't setenv exist key : %s " % key
     msg_ptr, msg_size = foreign.remotepack(value)
-    skynet_py_main.setlenv(key, msg_ptr, msg_size)
+    _core.setlenv(key, msg_ptr, msg_size)
     foreign.trash(msg_ptr, msg_size)
 
 
@@ -45,7 +45,7 @@ def envs():
     key = None
     re = {}
     while True:
-        key = skynet_py_main.nextenv(key)
+        key = _core.nextenv(key)
         if(key is None):
             break
         else:
@@ -66,11 +66,11 @@ boot_service = None
 def __first_msg_callback():
     global boot_service
     import pyskynet.skynet as skynet
-    source, type_id, session, ptr, length = skynet_py_mq.crecv()
+    source, type_id, session, ptr, length = _core.crecv()
     # assert first message ( c.send(".python", 0, 0, "") )
     assert type_id == 0, "first message type must be 0 but get %s" % type_id
     assert session == 0, "first message session must be 0 but get %s" % session
-    boot_service, = pyskynet.skynet_py_foreign_seri.luaunpack(ptr, length)
+    boot_service, = pyskynet._foreign_seri.luaunpack(ptr, length)
     __watcher.callback = lambda: gevent.spawn(skynet.__async_handle)
     gevent.spawn(skynet.__async_handle)
     __boot_event.set()
@@ -81,7 +81,7 @@ def __preinit():
     __watcher.start(__first_msg_callback)
     p_uv_async_send = libuv_cffi.ffi.addressof(libuv_cffi.lib, "uv_async_send")
     p_uv_async_t = __watcher._watcher
-    skynet_py_main.init(libuv_cffi.ffi, p_uv_async_send, p_uv_async_t)
+    _core.init(libuv_cffi.ffi, p_uv_async_send, p_uv_async_t)
 
 
 __preinit()
@@ -113,7 +113,7 @@ def start_with_settings(settings:Dict[str, Any]):
     setenv("harbor", "0") # used by cdummy
     # custom settings
     setenv("settings", settings)
-    skynet_py_main.start(thread=config.thread, profile=config.profile)
+    _core.start(thread=config.thread, profile=config.profile)
     __boot_event.wait()
 
 
