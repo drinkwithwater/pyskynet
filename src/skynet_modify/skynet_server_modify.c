@@ -28,7 +28,7 @@
 #include <stdbool.h>
 
 #include "skynet_foreign/skynet_foreign.h"
-#include "skynet_modify/skynet_py.h"
+#include "skynet_modify/skynet_modify.h"
 
 static inline void foreign_message_drop(struct skynet_message* msg) {
 	if((msg->sz >> MESSAGE_TYPE_SHIFT) == PTYPE_FOREIGN) {

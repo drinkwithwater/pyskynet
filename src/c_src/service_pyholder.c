@@ -1,6 +1,6 @@
 #include "skynet.h"
 #include "skynet_server.h"
-#include "skynet_modify/skynet_py.h"
+#include "skynet_modify/skynet_modify.h"
 
 #include <stdio.h>
 #include <stdlib.h>

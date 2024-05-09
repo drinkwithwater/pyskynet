@@ -11,12 +11,12 @@ from skynet_py cimport *
 cdef extern from "skynet_env.h":
     const char * skynet_getenv(const char *key);
 
-cdef extern from "skynet_modify/skynet_py.h":
+cdef extern from "skynet_modify/skynet_modify.h":
     int skynet_py_setlenv(const char *key, const char *value_str, size_t sz)
     const char *skynet_py_getlenv(const char *key, size_t *sz);
     const char *skynet_py_nextenv(const char *key)
-    const char *skynet_py_getscript(int index, size_t *sz);
-    int skynet_py_refscript(const char*key, size_t sz);
+    const char *skynet_modify_getscript(int index, size_t *sz);
+    int skynet_modify_refscript(const char*key, size_t sz);
 
 ctypedef (char *)(* f_type)(object, object)
 
@@ -80,12 +80,12 @@ def nextenv(key):
 
 def refscript(script):
     script = __check_bytes(script)
-    index = skynet_py_refscript(script, len(script))
+    index = skynet_modify_refscript(script, len(script))
     return index
 
 def getscript(index):
     cdef size_t sz
-    cdef const char * value = skynet_py_getscript(index, &sz)
+    cdef const char * value = skynet_modify_getscript(index, &sz)
     if value != NULL:
         return PyBytes_FromStringAndSize(value, sz);
     else:

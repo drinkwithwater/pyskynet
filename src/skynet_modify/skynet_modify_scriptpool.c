@@ -11,13 +11,13 @@ struct skynet_env {
 // mCodeScript used for scriptservice
 static struct skynet_env mCodeScript;
 
-void skynet_py_initscriptpool(void) {
+void skynet_modify_initscriptpool(void) {
 	SPIN_INIT(&mCodeScript);
 	mCodeScript.L = luaL_newstate();
 }
 
 // scriptservice_get
-const char *skynet_py_getscript(int index, size_t *sz) {
+const char *skynet_modify_getscript(int index, size_t *sz) {
   const char * data;
   SPIN_LOCK(&mCodeScript) {
     lua_pushglobaltable(mCodeScript.L);
@@ -35,7 +35,7 @@ const char *skynet_py_getscript(int index, size_t *sz) {
 	return data;
 }
 
-int skynet_py_refscript(const char* data, size_t sz) {
+int skynet_modify_refscript(const char* data, size_t sz) {
   int index = 0;
   SPIN_LOCK(&mCodeScript) {
     lua_pushglobaltable(mCodeScript.L);

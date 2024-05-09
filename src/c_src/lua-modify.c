@@ -1,6 +1,6 @@
 #define LUA_LIB
 #include "skynet.h"
-#include "skynet_modify/skynet_py.h"
+#include "skynet_modify/skynet_modify.h"
 
 #include <lua.h>
 #include <lauxlib.h>
@@ -75,7 +75,7 @@ lnextenv(lua_State *L) {
 static int lgetscript(lua_State *L) {
     int index = luaL_checkinteger(L, 1);
     size_t sz;
-    const char*data = skynet_py_getscript(index, &sz);
+    const char*data = skynet_modify_getscript(index, &sz);
     if(data == NULL) {
         lua_pushnil(L);
     } else {
@@ -87,7 +87,7 @@ static int lgetscript(lua_State *L) {
 static int lrefscript(lua_State *L) {
     size_t sz;
     const char*data = luaL_checklstring(L, 1, &sz);
-    int index = skynet_py_refscript(data, sz);
+    int index = skynet_modify_refscript(data, sz);
     lua_pushinteger(L, index);
     return 1;
 }

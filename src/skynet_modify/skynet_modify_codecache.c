@@ -12,7 +12,7 @@ struct skynet_env {
 // mCodeLoaded used in loadfile. loadfile can take TypeHintLua file and return cached function
 static struct skynet_env mCodeLoaded;
 
-void skynet_py_initcodecache(void) {
+void skynet_modify_initcodecache(void) {
 	SPIN_INIT(&mCodeLoaded);
 	mCodeLoaded.L = luaL_newstate();
 }

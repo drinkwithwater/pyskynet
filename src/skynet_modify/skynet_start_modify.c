@@ -15,7 +15,7 @@
 #include "skynet_daemon.h"
 #include "skynet_harbor.h"
 
-#include "skynet_modify/skynet_py.h"
+#include "skynet_modify/skynet_modify.h"
 
 #include <pthread.h>
 #include <unistd.h>

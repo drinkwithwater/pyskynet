@@ -34,7 +34,7 @@ cdef extern from "skynet_foreign/skynet_foreign.h":
     void skynet_foreign_incref(skynet_foreign *obj);
     void skynet_foreign_decref(skynet_foreign *obj);
 
-cdef extern from "skynet_modify/skynet_py.h":
+cdef extern from "skynet_modify/skynet_modify.h":
     cdef struct skynet_config:
         int thread
         int harbor

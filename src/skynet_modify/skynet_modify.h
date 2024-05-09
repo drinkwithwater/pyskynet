@@ -67,10 +67,10 @@ const char *skynet_py_getlenv(const char *key, size_t *sz);
 const char *skynet_py_nextenv(const char *key);
 
 /* function in skynet_py_codecache.c */
-void skynet_py_initcodecache(void);
+void skynet_modify_initcodecache(void);
 int pyskynet_modify_cacheload(lua_State *L);
 
-/* function in skynet_py_scriptpool.c */
-void skynet_py_initscriptpool(void);
-const char *skynet_py_getscript(int index, size_t *sz);
-int skynet_py_refscript(const char*key, size_t sz);
+/* function in skynet_modify_scriptpool.c */
+void skynet_modify_initscriptpool(void);
+const char *skynet_modify_getscript(int index, size_t *sz);
+int skynet_modify_refscript(const char*key, size_t sz);

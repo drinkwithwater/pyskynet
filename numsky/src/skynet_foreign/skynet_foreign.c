@@ -1,7 +1,7 @@
 
 #include "skynet_foreign/skynet_foreign.h"
 #ifdef BUILD_FOR_PYSKYNET
-#include "skynet_modify/skynet_py.h" // for include skynet_py_decref_python
+#include "skynet_modify/skynet_modify.h" // for include skynet_py_decref_python
 #endif
 
 #include <stdio.h>

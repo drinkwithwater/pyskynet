@@ -7,7 +7,7 @@
 #include "skynet.h"
 #include "skynet_env.h"
 #include "spinlock.h"
-#include "skynet_py.h"
+#include "skynet_modify.h"
 
 #include <lua.h>
 #include <lauxlib.h>
