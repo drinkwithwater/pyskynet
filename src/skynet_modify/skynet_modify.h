@@ -38,7 +38,6 @@ struct SkynetModifyGlobal {
 	uint32_t holder_address;
 	struct skynet_context * holder_context;
 	// temp malloc when start
-	struct spinlock lock;
 	void *temp_monitor;
 	void *temp_pids;
 	void *temp_wps;
@@ -52,14 +51,12 @@ int skynet_py_send(uint32_t lua_destination, int type, int session, void* msg, s
 int skynet_py_sendname(const char *lua_destination, int type, int session, void* msg, size_t sz);
 
 void skynet_py_decref_python(void * pyobj); // decref python object, called by foreign
-uint32_t skynet_py_address(); // get pyholder's address
-void skynet_py_init(int (*p_uv_async_send)(void *), void * p_uv_async_t); // binding libuv items
+uint32_t skynet_modify_address(); // get pyholder's address
+void skynet_modify_init(int (*p_uv_async_send)(void *), void * p_uv_async_t); // binding libuv items
 
 /* function in skynet_start_modify.c */
-void skynet_py_start(struct skynet_config * config);
-void skynet_py_wakeup();
-void skynet_py_join();
-void skynet_py_exit();
+void skynet_modify_start(struct skynet_config * config);
+void skynet_modify_wakeup();
 
 /* function in skynet_env_modify.c */
 int skynet_py_setlenv(const char *key, const char *value_str, size_t sz);

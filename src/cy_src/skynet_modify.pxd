@@ -57,9 +57,7 @@ cdef extern from "skynet_modify/skynet_modify.h":
     int skynet_py_queue_pop(SkynetModifyMessage * )
     int skynet_py_send(uint32_t dst, int type, int session, void* msg, size_t sz);
     int skynet_py_sendname(const char *dst, int type, int session, void* msg, size_t sz);
-    void skynet_py_init(int (*p_uv_async_send)(void *), void * p_uv_async_t);
-    void skynet_py_start(skynet_config * config)
-    void skynet_py_join();
-    void skynet_py_exit();
-    uint32_t skynet_py_address();
+    void skynet_modify_init(int (*p_uv_async_send)(void *), void * p_uv_async_t);
+    void skynet_modify_start(skynet_config * config)
+    uint32_t skynet_modify_address();
 

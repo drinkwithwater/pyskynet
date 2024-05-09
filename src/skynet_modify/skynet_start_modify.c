@@ -302,55 +302,12 @@ void skynet_start(struct skynet_config * config) {
 	start(config->thread);
 }
 
-// skynet_py_init -> skynet_py_start -> skynet_py_exit
-void skynet_py_start(struct skynet_config * config) {
+// skynet_modify_init -> skynet_modify_start
+void skynet_modify_start(struct skynet_config * config) {
     skynet_start(config);
 }
 
-void skynet_py_wakeup() {
+void skynet_modify_wakeup() {
     struct monitor *m = G_SKYNET_MODIFY.temp_monitor;
 	wakeup(m,0);
-}
-
-static void skynet_py_tryfree(){
-
-	SPIN_LOCK(&G_SKYNET_MODIFY)
-    struct monitor *m = G_SKYNET_MODIFY.temp_monitor;
-	G_SKYNET_MODIFY.temp_monitor = NULL;
-	SPIN_UNLOCK(&G_SKYNET_MODIFY)
-	if(m == NULL) {
-		return ;
-	} else {
-		free_monitor(m);
-	}
-
-    skynet_free(G_SKYNET_MODIFY.temp_pids);
-    skynet_free(G_SKYNET_MODIFY.temp_wps);
-
-	// harbor_exit may call socket send, so it should exit before socket_free
-	skynet_harbor_exit();
-	skynet_socket_free();
-	skynet_globalexit();
-
-	// TODO free other things in G_SKYNET_MODIFY ?
-}
-
-// this function is useless
-void skynet_py_join() {
-    struct monitor *m = G_SKYNET_MODIFY.temp_monitor;
-    for(int i=0;i<m->count+3;i++){
-        pthread_t *pid = G_SKYNET_MODIFY.temp_pids;
-		pthread_join(pid[i], NULL);
-    }
-	skynet_py_tryfree();
-}
-
-void skynet_py_exit() {
-	// TODO, how to exit without Segmentation fault?
-    struct monitor *m = G_SKYNET_MODIFY.temp_monitor;
-    for(int i=0;i<m->count+3;i++){
-        pthread_t *pid = G_SKYNET_MODIFY.temp_pids;
-        //pthread_cancel(pid[i]);
-    }
-	//skynet_py_tryfree();
 }

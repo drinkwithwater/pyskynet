@@ -94,7 +94,6 @@ __python_exit = exit
 
 
 def exit():
-    _core.exit()
     __python_exit()
 
 __join_event = gevent.event.Event()
@@ -102,4 +101,3 @@ __join_event = gevent.event.Event()
 def join():
     gevent.signal_handler(gevent.signal.SIGINT, __join_event.set)
     __join_event.wait()
-    _core.exit()

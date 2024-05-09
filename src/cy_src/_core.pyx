@@ -29,7 +29,7 @@ def init(ffi, async_send, async_handle):
     cdef void ** _cffi_exports = <void **>PyCapsule_GetPointer(_cffi_backend._C_API, "cffi")
     # get the '_cffi_to_c_pointer' function in _cffi_include.h of cffi
     cdef f_type _cffi_to_c_pointer = <f_type>_cffi_exports[11]
-    skynet_py_init(
+    skynet_modify_init(
             <int (*)(void*)>_cffi_to_c_pointer(async_send, ffi.typeof(async_send)),
             <void *>_cffi_to_c_pointer(async_handle, ffi.typeof(async_handle))
             )
@@ -107,16 +107,10 @@ def start(int thread, int profile):
     # ignore
     config.harbor = 0
     config.daemon = NULL # just ignore daemon
-    skynet_py_start(&config)
-
-def exit():
-    skynet_py_exit()
-
-def join():
-    skynet_py_join()
+    skynet_modify_start(&config)
 
 def self():
-    return skynet_py_address()
+    return skynet_modify_address()
 
 ##########################
 # functions for messages #
@@ -143,7 +137,7 @@ def crecv():
 
 # see lsend in lua-skynet.c
 def csend(py_dst, int type_id, py_session, py_msg, py_size=None):
-    assert skynet_py_address() > 0, "skynet threads has not been started yet, call 'pyskynet.start()' first."
+    assert skynet_modify_address() > 0, "skynet threads has not been started yet, call 'pyskynet.start()' first."
     # 1. check dst
     cdef char * dstname = NULL
     cdef int dst = 0

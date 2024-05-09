@@ -81,13 +81,13 @@ int skynet_py_queue_pop(struct SkynetModifyMessage *message){
 
 int skynet_py_send(uint32_t lua_destination, int type, int session, void* msg, size_t sz){
     int real_session = skynet_send(G_SKYNET_MODIFY.holder_context, G_SKYNET_MODIFY.holder_address, lua_destination, type, session, msg, sz);
-    skynet_py_wakeup();
+    skynet_modify_wakeup();
     return real_session;
 }
 
 int skynet_py_sendname(const char *lua_destination, int type, int session, void* msg, size_t sz){
     int real_session = skynet_sendname(G_SKYNET_MODIFY.holder_context, G_SKYNET_MODIFY.holder_address, lua_destination, type, session, msg, sz);
-    skynet_py_wakeup();
+    skynet_modify_wakeup();
     return real_session;
 }
 
@@ -110,7 +110,7 @@ static int sigign() {
 	return 0;
 }
 
-void skynet_py_init(int (*p_uv_async_send)(void *), void * p_uv_async_t){
+void skynet_modify_init(int (*p_uv_async_send)(void *), void * p_uv_async_t){
     // init queue
 	struct SkynetModifyQueue *q = &(G_SKYNET_MODIFY.recv_queue);
 	q->cap = 64;
@@ -125,7 +125,6 @@ void skynet_py_init(int (*p_uv_async_send)(void *), void * p_uv_async_t){
 	G_SKYNET_MODIFY.uv_async_busy = 0;
 	G_SKYNET_MODIFY.holder_context = NULL;
 	G_SKYNET_MODIFY.holder_address = 0;
-	SPIN_INIT(&G_SKYNET_MODIFY);
 
 	skynet_globalinit();
 	skynet_env_init();
@@ -143,6 +142,6 @@ void skynet_py_init(int (*p_uv_async_send)(void *), void * p_uv_async_t){
 }
 
 // if pyholder not started, return 0
-uint32_t skynet_py_address() {
+uint32_t skynet_modify_address() {
 	return G_SKYNET_MODIFY.holder_address;
 }
