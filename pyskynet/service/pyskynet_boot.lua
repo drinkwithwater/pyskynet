@@ -121,7 +121,6 @@ skynet.dispatch("lua", function (session,source,command,...)
 end)
 
 skynet.start(function()
-
 	-- 1. harbor, self as .cslave
 	harbor_service = assert(skynet.launch("harbor", 0, skynet.self()))
     skynet.name(".cslave", skynet.self())
@@ -134,18 +133,5 @@ skynet.start(function()
     skynet.newservice "service_mgr"
 
     -- 4. wakeup .python
-
-	local service = require "skynet.service"
-	local has_ltls = pcall(require, "ltls.init.c")
-	if has_ltls then
-		service.new("ltls_holder", function ()
-			local c = require "ltls.init.c"
-			c.constructor()
-		end)
-	end
 	core.send(".python", 0, 0, skynet.pack(skynet.self()))
-	if not has_ltls then
-		skynet.error("ltls_holder not created, can't use wss or https")
-	end
-
 end)

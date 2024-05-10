@@ -18,8 +18,9 @@ sys.setdlopenflags(flags)
 import pyskynet.config as config
 import pyskynet.foreign as foreign
 import pyskynet._foreign_seri
-import pyskynet._core as _core
 from typing import Dict, Any
+import pyskynet.skynet as skynet
+import logging
 
 ####################
 # 1. env set & get #
@@ -52,38 +53,43 @@ def envs():
             re[key] = getenv(key)
     return re
 
+
 #################
 # 2. boot items #
 #################
 
 __boot_event = None
+__boot_service = None
+
 __msg_watcher = gevent.get_hub().loop.async_()
 __ctrl_watcher = gevent.get_hub().loop.async_()
 
-boot_service = None
-
-
-# first callback, waiting for skynet_py_boot
+# first callback, waiting for pyskynet_boot
 def __first_msg_callback():
-    global boot_service
-    import pyskynet.skynet as skynet
+    global __boot_service
     source, type_id, session, ptr, length = _core.crecv()
     # assert first message ( c.send(".python", 0, 0, "") )
     assert type_id == 0, "first message type must be 0 but get %s" % type_id
     assert session == 0, "first message session must be 0 but get %s" % session
-    boot_service, = pyskynet._foreign_seri.luaunpack(ptr, length)
+    __boot_service, = pyskynet._foreign_seri.luaunpack(ptr, length)
     __msg_watcher.callback = lambda: gevent.spawn(skynet.__async_handle)
     gevent.spawn(skynet.__async_handle)
     __boot_event.set()
 
 
+def log_record(source:int, message:bytes)->logging.LogRecord:
+    return logging.LogRecord(skynet.logger.name, logging.INFO, "(unknown lua file)", 0, str(source) + "\t" + str(message), None, None)
+
+
+# logger call loop
 def __ctrl_async_callback():
     while True:
         src, data = _core.ctrl_pop_log()
         if src is None:
             break
         else:
-            print(src, data)
+            skynet.logger.handle(log_record(src, data))
+
 
 # preinit, register libuv items
 def __preinit():
@@ -95,18 +101,12 @@ def __preinit():
 
 __preinit()
 
-SKYNET_ROOT = os.path.join(os.path.abspath(
-    os.path.dirname(__file__)), "../skynet")
-PYSKYNET_ROOT = os.path.abspath(os.path.dirname(__file__))
-
-def start_with_settings(settings:Dict[str, Any]):
+def start_with_settings(thread:int, profile:int, settings:Dict[str, Any]):
     global __boot_event
-    if not (__boot_event is None):
-        __boot_event.wait()
-        return
+    assert __boot_event is None, "pyskynet.start can only be called once"
     __boot_event = gevent.event.Event()
-    setenv("thread", config.thread)
-    setenv("profile", config.profile)
+    setenv("thread", thread)
+    setenv("profile", profile)
     # path
     setenv("cservice", ";".join(config.cservice))
     setenv("luaservice", ";".join(config.luaservice))
@@ -120,7 +120,7 @@ def start_with_settings(settings:Dict[str, Any]):
     setenv("harbor", "0") # used by cdummy
     # custom settings
     setenv("settings", settings)
-    _core.start(thread=config.thread, profile=config.profile)
+    _core.start(thread=thread, profile=profile)
     __boot_event.wait()
 
 
@@ -134,13 +134,13 @@ def main():
     args = parser.parse_args()
     if args.script != "":
         import pyskynet
-        start_with_settings({})
+        start_with_settings(2, 0, {})
         with open(args.script) as fo:
             script = fo.read()
-        pyskynet.foreign.call(boot_service, "cmdline", args.script, script, *args.args)
+        pyskynet.foreign.call(__boot_service, "cmdline", args.script, script, *args.args)
     else:
         import pyskynet
-        start_with_settings({})
+        start_with_settings(2, 0, {})
         import pyskynet.foreign
         import code
         import sys
@@ -153,7 +153,7 @@ def main():
                 sys.ps1 = "(lua)> "
 
             def runsource(self, *args, **kwargs):
-                pyskynet.foreign.call(boot_service, "repl", args[0])
+                pyskynet.foreign.call(__boot_service, "repl", args[0])
                 return False
 
             def raw_input(self, *args, **kwargs):

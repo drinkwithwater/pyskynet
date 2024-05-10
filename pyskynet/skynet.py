@@ -4,6 +4,7 @@ import pyskynet._foreign_seri as foreign_seri
 import gevent
 from gevent.event import AsyncResult
 import traceback
+import logging
 
 PTYPE_TEXT = _core.SKYNET_PTYPE.PTYPE_TEXT
 PTYPE_CLIENT = _core.SKYNET_PTYPE.PTYPE_CLIENT
@@ -20,8 +21,11 @@ local_session_to_ar = {}
 
 pyskynet_proto_dict = {}
 
-def hook_print(*args):
-    print("pyskynet:", *args, flush=True)
+logger = logging.getLogger("pyskynet")
+
+default_logger_handler = logging.StreamHandler()
+
+logger.addHandler(default_logger_handler)
 
 class PySkynetProto(object):
     def __init__(self, id, name, pack=None, unpack=None, dispatch=None):
@@ -166,7 +170,7 @@ def __async_handle():
             ar = local_session_to_ar.pop(session)
             ar.set((ptr, length))
         except KeyError as e:
-            hook_print("[ERROR] unknown response session: %d from %x"%(session, source))
+            logger.error("unknown response session: %d from %x"%(session, source))
     else:
         # TODO exception
         try:
@@ -175,7 +179,7 @@ def __async_handle():
             if session != 0:
                 _core.csend(source, SKYNET_PTYPE.PTYPE_ERROR, session, "")
             else:
-                hook_print("[ERROR] unknown request with unexcept type_id %s, session: %d from %x"%(type_id, session, source))
+                logger.error("unknown request with unexcept type_id %s, session: %d from %x"%(type_id, session, source))
             return
         co = gevent.getcurrent()
         co_to_remote_session[co] = session
@@ -185,13 +189,13 @@ def __async_handle():
                 psproto.dispatch(session, source, psproto.unpack(ptr, length))
                 if co in co_to_remote_session:
                     if session != 0:
-                        hook_print("Maybe forgot response session %s from %s " % (session, source))
+                        logger.warn("Maybe forgot response session %s from %s " % (session, source))
                     co_to_remote_session.pop(co)
                     co_to_remote_address.pop(co)
             except Exception as e:
                 if session != 0:
                     _core.csend(source, SKYNET_PTYPE.PTYPE_ERROR, session, "")
-                hook_print("[ERROR]", traceback.format_exc())
+                logger.error(traceback.format_exc())
                 if co in co_to_remote_session:
                     co_to_remote_session.pop(co)
                     co_to_remote_address.pop(co)
@@ -199,5 +203,5 @@ def __async_handle():
             if session != 0:
                 _core.csend(source, SKYNET_PTYPE.PTYPE_ERROR, session, "")
             else:
-                hook_print("[ERROR] request with dispatch not callable, session: %d from %x"%(session, address))
+                logger.error("request with dispatch not callable, session: %d from %x"%(session, address))
             return

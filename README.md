@@ -4,8 +4,6 @@ PySkynet is a library for using [skynet](https://github.com/cloudwu/skynet) in p
 
 ### Install
 
-Default install, find ssl by default. If ssl is not found, ltls.so will not be installed
-
 ~~~~sh
 $ pip install pyskynet
 ~~~~

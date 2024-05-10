@@ -16,8 +16,6 @@ __all__ = [
 
         "lualoader",
         "bootstrap",
-
-        "settings",
 ]
 
 thread:int = 8
@@ -49,4 +47,4 @@ lua_path:List[str] = [
 
 # script
 lualoader:str = __PYSKYNET_ROOT+"/thlua_loader.lua"
-bootstrap:str = "snlua skynet_py_boot"
+bootstrap:str = "snlua pyskynet_boot"

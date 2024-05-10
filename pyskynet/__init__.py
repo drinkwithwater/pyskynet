@@ -2,13 +2,15 @@
 ###############################
 # some api different from lua #
 ###############################
+import pyskynet.boot as boot
 from pyskynet.boot import config, start_with_settings, gevent
-import pyskynet._core
+import pyskynet.skynet as skynet
+from pyskynet.skynet import logger, default_logger_handler
 import pyskynet.foreign as foreign
 import pyskynet._core as _core
-import pyskynet.skynet as skynet
 import inspect
-from typing import Dict, Any
+from typing import Optional, Callable
+import logging
 
 __all__ = [
     "__version__",
@@ -22,20 +24,21 @@ __all__ = [
     "uniqueservice",
     "scriptservice",
 
+    "logger",
+
     "self",
 
     "start",
     "exit",
     "join",
-
-    "settings",
 ]
 
 __version__ = '0.3.1'
-settings:Dict[str, Any] = {}
 
-def start():
-    start_with_settings(settings)
+def start(thread:int=8, profile:bool=False, log_record:Optional[Callable[[int, str], logging.LogRecord]]=None, **settings):
+    if not(log_record is None):
+        boot.log_record = log_record
+    start_with_settings(int(thread), int(profile), settings)
 
 ###############
 # service api #
@@ -87,7 +90,7 @@ def scriptservice(scriptCode, *args):
 
 def self():
     address = _core.self()
-    assert address > 0, "service pyholder not start "
+    assert address > 0, "bridge python service not start "
     return address
 
 __python_exit = exit
