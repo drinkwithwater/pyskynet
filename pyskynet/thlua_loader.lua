@@ -1161,7 +1161,7 @@ package.searchers[2] = function(name)
 	end
 	local thluaCode = file:read("*a")
 	file:close()
-	return assert(thlua.load(thluaCode, fileName)), fileName
+	return assert(thlua.load(thluaCode, "@"..fileName)), fileName
 end
 
 -------------------------------------------------

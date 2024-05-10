@@ -24,8 +24,10 @@ pyskynet_proto_dict = {}
 logger = logging.getLogger("pyskynet")
 
 default_logger_handler = logging.StreamHandler()
+default_logger_handler.setFormatter(logging.Formatter("[%(asctime)s][%(levelname)s]%(pathname)s:%(lineno)d - %(message)s"))
 
 logger.addHandler(default_logger_handler)
+logger.setLevel(logging.INFO)
 
 class PySkynetProto(object):
     def __init__(self, id, name, pack=None, unpack=None, dispatch=None):

@@ -86,11 +86,18 @@ def __ctrl_async_callback():
         data = data.decode("utf-8")
         if data[0] == '|':
             sp = data.split('|')
-            level, filename, lineno = int(sp[1]), sp[2].decode("utf-8"), int(sp[3])
+            level = int(sp[1])
+            filename = sp[2]
+            lineno = int(sp[3])
             body = sp[4] if len(sp) <= 5 else "|".join(sp[4:])
-            return logging.LogRecord(skynet.logger.name, level, filename, lineno, body, None, None, address=source)
         else:
-            return logging.LogRecord(skynet.logger.name, logging.INFO, "(unknown file %s)" % source, 0, data, None, None, address=source)
+            level = logging.INFO
+            filename = "(unknown:%08x)" % source
+            lineno = 0
+            body = data
+        if skynet.logger.isEnabledFor(level):
+            record = logging.LogRecord(skynet.logger.name, level, filename, lineno, body, None, None, address=source)
+            skynet.logger.handle(record)
 
 
 # preinit, register libuv items
