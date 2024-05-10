@@ -32,7 +32,7 @@ __all__ = [
     "join",
 ]
 
-__version__ = '0.3.1'
+__version__ = '0.3.2'
 
 def start(thread:int=8, profile:bool=False, **settings):
     start_with_settings(int(thread), int(profile), settings)
