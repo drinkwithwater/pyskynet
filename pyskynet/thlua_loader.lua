@@ -1124,7 +1124,18 @@ local thlua = require "thlua"
 --------------------------------------------------------------------------------------------------------
 
 
+local debug_getinfo = debug.getinfo
 local modify = require "pyskynet.modify"
+
+-- 0. patch skynet.error
+local skynet_core = require "skynet.core"
+skynet_core.old_error = skynet_core.error
+skynet_core.error = function (...)
+	local info = debug_getinfo(2)
+	-- 20 means INFO level
+	return modify.logprint(20, info.short_src, info.currentline, ...)
+end
+
 -- 1. patch loadfile
 local loadfile_ = loadfile
 loadfile = function(filename, ...)
@@ -1132,11 +1143,12 @@ loadfile = function(filename, ...)
 	if ok then
 		return ok
 	end
-	return modify.cacheload(filename, function()
+	return modify.cacheload("@"..filename, function()
 		local file = assert(io.open(filename, "r"))
 		return assert(thlua.compile(file:read("a"), filename))
 	end, ...)
 end
+
 -- 2. patch searchers
 package.searchers[2] = function(name)
 	local fileName, err1 = package.searchpath(name, package.path)

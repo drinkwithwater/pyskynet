@@ -58,37 +58,39 @@ def envs():
 # 2. boot items #
 #################
 
-__boot_event = None
-__boot_service = None
-
 __msg_watcher = gevent.get_hub().loop.async_()
 __ctrl_watcher = gevent.get_hub().loop.async_()
 
+__boot_event = None
+boot_service = None
+
 # first callback, waiting for pyskynet_boot
 def __first_msg_callback():
-    global __boot_service
+    global boot_service
     source, type_id, session, ptr, length = _core.crecv()
     # assert first message ( c.send(".python", 0, 0, "") )
     assert type_id == 0, "first message type must be 0 but get %s" % type_id
     assert session == 0, "first message session must be 0 but get %s" % session
-    __boot_service, = pyskynet._foreign_seri.luaunpack(ptr, length)
+    boot_service, = pyskynet._foreign_seri.luaunpack(ptr, length)
     __msg_watcher.callback = lambda: gevent.spawn(skynet.__async_handle)
     gevent.spawn(skynet.__async_handle)
     __boot_event.set()
 
 
-def log_record(source:int, message:bytes)->logging.LogRecord:
-    return logging.LogRecord(skynet.logger.name, logging.INFO, "(unknown lua file)", 0, str(source) + "\t" + str(message), None, None)
-
-
 # logger call loop
 def __ctrl_async_callback():
     while True:
-        src, data = _core.ctrl_pop_log()
-        if src is None:
+        source, data = _core.ctrl_pop_log()
+        if source is None:
             break
+        data = data.decode("utf-8")
+        if data[0] == '|':
+            sp = data.split('|')
+            level, filename, lineno = int(sp[1]), sp[2].decode("utf-8"), int(sp[3])
+            body = sp[4] if len(sp) <= 5 else "|".join(sp[4:])
+            return logging.LogRecord(skynet.logger.name, level, filename, lineno, body, None, None, address=source)
         else:
-            skynet.logger.handle(log_record(src, data))
+            return logging.LogRecord(skynet.logger.name, logging.INFO, "(unknown file %s)" % source, 0, data, None, None, address=source)
 
 
 # preinit, register libuv items
@@ -135,9 +137,7 @@ def main():
     if args.script != "":
         import pyskynet
         start_with_settings(2, 0, {})
-        with open(args.script) as fo:
-            script = fo.read()
-        pyskynet.foreign.call(__boot_service, "cmdline", args.script, script, *args.args)
+        pyskynet.foreign.call(boot_service, "cmdline", args.script, *args.args)
     else:
         import pyskynet
         start_with_settings(2, 0, {})
@@ -153,7 +153,7 @@ def main():
                 sys.ps1 = "(lua)> "
 
             def runsource(self, *args, **kwargs):
-                pyskynet.foreign.call(__boot_service, "repl", args[0])
+                pyskynet.foreign.call(boot_service, "repl", args[0])
                 return False
 
             def raw_input(self, *args, **kwargs):

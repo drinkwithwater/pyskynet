@@ -3,7 +3,6 @@ require "skynet.manager"	-- import skynet.launch, ...
 local core = require "skynet.core"
 
 local foreign = require "pyskynet.foreign"
-local thlua = require "thlua"
 
 ----------------
 -- BOOT items --
@@ -32,8 +31,8 @@ function BOOT.repl(script)
 end
 
 -- for pyskynet script
-function BOOT.cmdline(scriptName, scriptCode, ...)
-	local main, err = thlua.load(scriptCode, scriptName)
+function BOOT.cmdline(scriptName, ...)
+	local main, err = loadfile(scriptName)
 	if not main then
 		error(err)
 	else

@@ -10,7 +10,6 @@ import pyskynet.foreign as foreign
 import pyskynet._core as _core
 import inspect
 from typing import Optional, Callable
-import logging
 
 __all__ = [
     "__version__",
@@ -35,9 +34,7 @@ __all__ = [
 
 __version__ = '0.3.1'
 
-def start(thread:int=8, profile:bool=False, log_record:Optional[Callable[[int, str], logging.LogRecord]]=None, **settings):
-    if not(log_record is None):
-        boot.log_record = log_record
+def start(thread:int=8, profile:bool=False, **settings):
     start_with_settings(int(thread), int(profile), settings)
 
 ###############

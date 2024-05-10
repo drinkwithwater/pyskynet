@@ -116,7 +116,6 @@ def setlenv(key, capsule_or_bytes, py_sz=None):
         raise Exception("setlenv but key conflict")
 
 
-
 def getlenv(key):
     key = __check_bytes(key)
     cdef size_t sz
@@ -175,6 +174,7 @@ cdef void free_pyptr(object capsule):
     cdef void *ptr = PyCapsule_GetPointer(capsule, "pyptr")
     skynet_free(ptr)
 
+# pop message from msg_queue
 def crecv():
     cdef SkynetModifyMessage msg
     cdef int ret = skynet_modify_queue_pop(&G_SKYNET_MODIFY.msg_queue, &msg)
@@ -187,6 +187,7 @@ def crecv():
         else:
             return msg.source, msg.type, msg.session, b"", 0
 
+# pop message from ctrl_queue
 def ctrl_pop_log():
     cdef SkynetModifyMessage msg
     cdef int ret = skynet_modify_queue_pop(&G_SKYNET_MODIFY.ctrl_queue, &msg)

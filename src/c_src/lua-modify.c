@@ -92,6 +92,34 @@ static int lrefscript(lua_State *L) {
     return 1;
 }
 
+static int llogprint(lua_State *L) {
+	struct skynet_context * context = lua_touserdata(L, lua_upvalueindex(1));
+    long loglevel = luaL_checkinteger(L, 1);
+    const char * filename = luaL_checkstring(L, 2);
+    long lineno = luaL_checkinteger(L, 3);
+    const int MSG_INDEX = 4;
+	int n = lua_gettop(L);
+	if (n <= MSG_INDEX) {
+		lua_settop(L, MSG_INDEX);
+		const char * s = luaL_tolstring(L, MSG_INDEX, NULL);
+		skynet_error(context, "|%d|%s|%d|%s", loglevel, filename, lineno, s);
+		return 0;
+	}
+	luaL_Buffer b;
+	luaL_buffinit(L, &b);
+	int i;
+	for (i=MSG_INDEX; i<=n; i++) {
+		luaL_tolstring(L, i, NULL);
+		luaL_addvalue(&b);
+		if (i<n) {
+			luaL_addchar(&b, ' ');
+		}
+	}
+	luaL_pushresult(&b);
+	skynet_error(context, "|%d|%s|%d|%s", loglevel, filename, lineno, lua_tostring(L, -1));
+	return 0;
+}
+
 static const struct luaL_Reg l_methods[] = {
     { "setlenv", lsetlenv},
     { "getlenv", lgetlenv},
@@ -102,11 +130,23 @@ static const struct luaL_Reg l_methods[] = {
     { NULL,  NULL },
 };
 
+static const struct luaL_Reg l_ctx_methods[] = {
+    { "logprint", llogprint},
+    { NULL,  NULL },
+};
+
 LUAMOD_API int luaopen_pyskynet_modify(lua_State *L) {
     luaL_checkversion(L);
 
     luaL_newlib(L, l_methods);
 
+    lua_getfield(L, LUA_REGISTRYINDEX, "skynet_context");
+    struct skynet_context *ctx = lua_touserdata(L, -1);
+    if (ctx == NULL)
+    {
+        return luaL_error(L, "Init skynet context first");
+    }
+
+    luaL_setfuncs(L, l_ctx_methods, 1);
     return 1;
 }
-
