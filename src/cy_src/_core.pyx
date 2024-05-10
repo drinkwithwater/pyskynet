@@ -45,8 +45,6 @@ cdef extern from "skynet_modify/skynet_modify.h":
         const char * daemon
         const char * module_path
         const char * bootstrap
-        const char * logger
-        const char * logservice
     cdef struct SkynetModifyMessage:
         int type
         int session
@@ -58,8 +56,8 @@ cdef extern from "skynet_modify/skynet_modify.h":
     cdef struct SkynetModifyGlobal:
         SkynetModifyQueue msg_queue
         SkynetModifyQueue ctrl_queue
-        uint32_t holder_address;
-        skynet_context * holder_context;
+        uint32_t python_address;
+        skynet_context * python_context;
     SkynetModifyGlobal G_SKYNET_MODIFY
     cdef enum:
         PTYPE_FOREIGN_REMOTE
@@ -71,7 +69,7 @@ cdef extern from "skynet_modify/skynet_modify.h":
     void skynet_modify_wakeup();
     int skynet_modify_setlenv(const char *key, const char *value_str, size_t sz)
     const char *skynet_modify_getlenv(const char *key, size_t *sz);
-    const char *skynet_py_nextenv(const char *key)
+    const char *skynet_modify_nextenv(const char *key)
     const char *skynet_modify_getscript(int index, size_t *sz);
     int skynet_modify_refscript(const char*key, size_t sz);
 
@@ -131,10 +129,10 @@ def getlenv(key):
 def nextenv(key):
     cdef const char * ptr
     if key is None:
-        ptr = skynet_py_nextenv(NULL)
+        ptr = skynet_modify_nextenv(NULL)
     else:
         key = __check_bytes(key)
-        ptr = skynet_py_nextenv(key)
+        ptr = skynet_modify_nextenv(key)
     if ptr == NULL:
         return None
     else:
@@ -160,8 +158,6 @@ def start(int thread, int profile):
     # use getenv for a stable ptr
     config.module_path = skynet_getenv("cservice")
     config.bootstrap = skynet_getenv("bootstrap")
-    config.logservice = skynet_getenv("logservice")
-    config.logger = skynet_getenv("logger")
     # ignore
     config.harbor = 0
     config.daemon = NULL # just ignore daemon
@@ -169,7 +165,7 @@ def start(int thread, int profile):
 
 # if pyholder not started, return 0
 def self():
-    return G_SKYNET_MODIFY.holder_address;
+    return G_SKYNET_MODIFY.python_address;
 
 ##########################
 # functions for messages #
@@ -182,9 +178,6 @@ cdef void free_pyptr(object capsule):
 def crecv():
     cdef SkynetModifyMessage msg
     cdef int ret = skynet_modify_queue_pop(&G_SKYNET_MODIFY.msg_queue, &msg)
-    while ret == 0 and msg.type == PTYPE_DECREF_PYTHON:
-        Py_XDECREF(<PyObject*>msg.data)
-        ret = skynet_modify_queue_pop(&G_SKYNET_MODIFY.msg_queue, &msg)
     if ret != 0:
         return None, None, None, None, None
     else:
@@ -203,15 +196,17 @@ def ctrl_pop_log():
     cdef char* data = <char*>msg.data
     cdef int sz = msg.size
     if ret != 0:
-        return None
+        return None, None
     elif data == NULL:
-        return None
+        return None, None
     else:
-        return data[:sz]
+        text = data[:sz]
+        skynet_free(data)
+        return msg.source, text
 
 # see lsend in lua-skynet.c
 def csend(py_dst, int type_id, py_session, py_msg, py_size=None):
-    assert G_SKYNET_MODIFY.holder_address > 0, "skynet threads has not been started yet, call 'pyskynet.start()' first."
+    assert G_SKYNET_MODIFY.python_address > 0, "skynet threads has not been started yet, call 'pyskynet.start()' first."
     # 1. check dst
     cdef char * dstname = NULL
     cdef int dst = 0
@@ -247,9 +242,9 @@ def csend(py_dst, int type_id, py_session, py_msg, py_size=None):
         raise Exception("type:%s unexcept when skynet csend"%type(py_msg))
 
     if dstname == NULL:
-        session = skynet_send(G_SKYNET_MODIFY.holder_context, G_SKYNET_MODIFY.holder_address, dst, type_id, session, ptr, size)
+        session = skynet_send(G_SKYNET_MODIFY.python_context, G_SKYNET_MODIFY.python_address, dst, type_id, session, ptr, size)
     else:
-        session = skynet_sendname(G_SKYNET_MODIFY.holder_context, G_SKYNET_MODIFY.holder_address, dstname, type_id, session, ptr, size)
+        session = skynet_sendname(G_SKYNET_MODIFY.python_context, G_SKYNET_MODIFY.python_address, dstname, type_id, session, ptr, size)
     skynet_modify_wakeup()
 
     if session < 0:

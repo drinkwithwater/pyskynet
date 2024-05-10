@@ -63,7 +63,7 @@ lnextenv(lua_State *L) {
     if(lua_type(L,1) == LUA_TSTRING) {
 	   key = lua_tostring(L, 1);
     }
-    const char *nextkey = skynet_py_nextenv(key);
+    const char *nextkey = skynet_modify_nextenv(key);
     if(nextkey == NULL) {
 	   lua_pushnil(L);
     } else {

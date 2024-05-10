@@ -80,5 +80,5 @@ void skynet_modify_decref_python(void * pyobj) {
 	msg.source = 0;
     msg.data = pyobj;
     msg.size = 0;
-	skynet_modify_queue_push(&(G_SKYNET_MODIFY.msg_queue), &msg);
+	skynet_modify_queue_push(&(G_SKYNET_MODIFY.ctrl_queue), &msg);
 }

@@ -37,8 +37,8 @@ struct SkynetModifyGlobal {
 	struct SkynetModifyQueue msg_queue;  // queue for message
 	struct SkynetModifyQueue ctrl_queue;  // queue for log & dec
 	// holder item
-	uint32_t holder_address;
-	struct skynet_context * holder_context;
+	uint32_t python_address;
+	struct skynet_context * python_context;
 	// temp malloc when start
 	void *temp_monitor;
 	void *temp_pids;
@@ -61,7 +61,7 @@ void skynet_modify_wakeup();
 /* function in skynet_env_modify.c */
 int skynet_modify_setlenv(const char *key, const char *value_str, size_t sz);
 const char *skynet_modify_getlenv(const char *key, size_t *sz);
-const char *skynet_py_nextenv(const char *key);
+const char *skynet_modify_nextenv(const char *key);
 
 /* function in skynet_py_codecache.c */
 void skynet_modify_initcodecache(void);

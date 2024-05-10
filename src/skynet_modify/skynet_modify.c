@@ -40,8 +40,8 @@ void skynet_modify_init(int (*p_uv_async_send)(void *), void* msg_async_t, void*
 	queue_init(&G_SKYNET_MODIFY.ctrl_queue, p_uv_async_send, ctrl_async_t);
 
     // init uv
-	G_SKYNET_MODIFY.holder_context = NULL;
-	G_SKYNET_MODIFY.holder_address = 0;
+	G_SKYNET_MODIFY.python_context = NULL;
+	G_SKYNET_MODIFY.python_address = 0;
 
 	skynet_globalinit();
 	skynet_env_init();

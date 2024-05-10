@@ -33,7 +33,7 @@ else:
 INCLUDE_DIRS = [SKYNET_SRC_PATH, LUA_PATH, "./src", "./src/c_src", "./skynet/lualib-src", "./numsky/src"]
 
 def create_skynet_extensions():
-    SKYNET_CSERVICES = ["snlua", "logger", "gate", "harbor"]
+    SKYNET_CSERVICES = ["snlua", "gate", "harbor"]
     ext_cservices = []
     for cservice in SKYNET_CSERVICES:
         ext = Extension('skynet.cservice.'+cservice,
@@ -85,8 +85,8 @@ def create_skynet_extensions():
     return ext_cservices + [ext_skynet, ext_lpeg, ext_md5, ext_bson, ext_sproto]
 
 def create_lua_extensions():
-    lua_service_pyholder = Extension('skynet.cservice.pyholder',
-        sources=['src/c_src/service_pyholder.c'],
+    lua_service_bridge = Extension('skynet.cservice.bridge',
+        sources=['src/c_src/service_bridge.c'],
         include_dirs=INCLUDE_DIRS,
         define_macros=MACROS,
         libraries=LIBRARIES)
@@ -111,7 +111,7 @@ def create_lua_extensions():
         define_macros=MACROS,
         extra_compile_args=['-std=c++11'],
         libraries=LIBRARIES)
-    return [lua_service_pyholder, lua_foreign_seri, lua_modify, lua_numsky]
+    return [lua_service_bridge, lua_foreign_seri, lua_modify, lua_numsky]
 
 def create_3rd_extensions():
     lua_pb = Extension('pyskynet.lualib.pb',

@@ -277,25 +277,25 @@ void skynet_start(struct skynet_config * config) {
 	skynet_profile_enable(config->profile);
 
 	// launch logger service
-	struct skynet_context *logger_ctx = skynet_context_new(config->logservice, config->logger);
+	struct skynet_context *logger_ctx = skynet_context_new("bridge", "logger");
 	if (logger_ctx == NULL) {
-		fprintf(stderr, "Can't launch %s service\n", config->logservice);
+		fprintf(stderr, "Can't launch bridge logger service\n");
 		exit(1);
 	}
 
 	skynet_handle_namehandle(skynet_context_handle(logger_ctx), "logger");
 
-	// launch pyholder service
-	struct skynet_context *pyholder_ctx = skynet_context_new("pyholder", NULL);
-	if (pyholder_ctx == NULL) {
-		fprintf(stderr, "Can't launch pyholder service\n");
+	// launch python service
+	struct skynet_context *python_ctx = skynet_context_new("bridge", "python");
+	if (python_ctx == NULL) {
+		fprintf(stderr, "Can't launch bridge python service\n");
 		exit(1);
 	}
 
-	skynet_handle_namehandle(skynet_context_handle(pyholder_ctx), "python");
+	skynet_handle_namehandle(skynet_context_handle(python_ctx), "python");
 
-	G_SKYNET_MODIFY.holder_context = pyholder_ctx;
-	G_SKYNET_MODIFY.holder_address = skynet_context_handle(pyholder_ctx);
+	G_SKYNET_MODIFY.python_context = python_ctx;
+	G_SKYNET_MODIFY.python_address = skynet_context_handle(python_ctx);
 
 	bootstrap(logger_ctx, config->bootstrap);
 

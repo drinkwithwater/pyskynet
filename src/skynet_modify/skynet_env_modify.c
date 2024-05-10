@@ -59,7 +59,7 @@ int skynet_modify_setlenv(const char *key, const char *value_str, size_t sz) {
 }
 
 // nextkey
-const char *skynet_py_nextenv(const char *key) {
+const char *skynet_modify_nextenv(const char *key) {
     const char * next_key = NULL;
 
 	SPIN_LOCK(E);

@@ -78,11 +78,12 @@ def __first_msg_callback():
 
 
 def __ctrl_async_callback():
-    data = _core.ctrl_pop_log()
-    if data is None:
-        pass
-    else:
-        print(data)
+    while True:
+        src, data = _core.ctrl_pop_log()
+        if src is None:
+            break
+        else:
+            print(src, data)
 
 # preinit, register libuv items
 def __preinit():
@@ -114,8 +115,6 @@ def start_with_settings(settings:Dict[str, Any]):
     # scripts
     setenv("lualoader", config.lualoader)
     setenv("bootstrap", config.bootstrap)
-    setenv("logservice", config.logservice)
-    setenv("logger", config.logger)
     # immutable setting
     setenv("standalone", "1") # used by service_mgr.lua
     setenv("harbor", "0") # used by cdummy

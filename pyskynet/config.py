@@ -16,8 +16,6 @@ __all__ = [
 
         "lualoader",
         "bootstrap",
-        "logservice",
-        "logger",
 
         "settings",
 ]
@@ -52,5 +50,3 @@ lua_path:List[str] = [
 # script
 lualoader:str = __PYSKYNET_ROOT+"/thlua_loader.lua"
 bootstrap:str = "snlua skynet_py_boot"
-logservice:str = "snlua"
-logger:str = "skynet_py_logger"

@@ -3,7 +3,6 @@ require "skynet.manager"	-- import skynet.launch, ...
 local core = require "skynet.core"
 
 local foreign = require "pyskynet.foreign"
-local modify = require "pyskynet.modify"
 local thlua = require "thlua"
 
 ----------------
