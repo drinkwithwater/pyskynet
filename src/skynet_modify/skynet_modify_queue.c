@@ -9,7 +9,8 @@
 #include <signal.h>
 
 // code just like skynet_mq.c
-void skynet_modify_queue_push(struct SkynetModifyQueue* q, struct SkynetModifyMessage *message) {
+void skynet_modify_queue_push(struct SkynetModifyMessage *message) {
+	struct SkynetModifyQueue *q = &(G_SKYNET_MODIFY.msg_queue);
 	int uv_async_busy = 0;
 	SPIN_LOCK(q)
 	// push into queue
@@ -45,7 +46,8 @@ void skynet_modify_queue_push(struct SkynetModifyQueue* q, struct SkynetModifyMe
 }
 
 // code just like skynet_mq.c
-int skynet_modify_queue_pop(struct SkynetModifyQueue* q, struct SkynetModifyMessage *message){
+int skynet_modify_queue_pop(struct SkynetModifyMessage *message){
+	struct SkynetModifyQueue *q = &(G_SKYNET_MODIFY.msg_queue);
 	int ret = 1;
 	SPIN_LOCK(q)
 
@@ -80,5 +82,5 @@ void skynet_modify_decref_python(void * pyobj) {
 	msg.source = 0;
     msg.data = pyobj;
     msg.size = 0;
-	skynet_modify_queue_push(&(G_SKYNET_MODIFY.ctrl_queue), &msg);
+	skynet_modify_queue_push(&msg);
 }

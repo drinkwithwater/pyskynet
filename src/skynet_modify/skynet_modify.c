@@ -13,6 +13,7 @@
 
 struct SkynetModifyGlobal G_SKYNET_MODIFY;
 
+// just copy from skynet_main.c, i don't know how this work...
 static int sigign() {
 	struct sigaction sa;
 	sa.sa_handler = SIG_IGN;
@@ -34,10 +35,9 @@ static void queue_init(struct SkynetModifyQueue* q, int (*p_uv_async_send)(void 
 	SPIN_INIT(q);
 }
 
-void skynet_modify_init(int (*p_uv_async_send)(void *), void* msg_async_t, void* ctrl_async_t){
+void skynet_modify_init(int (*p_uv_async_send)(void *), void* msg_async_t){
 
 	queue_init(&G_SKYNET_MODIFY.msg_queue, p_uv_async_send, msg_async_t);
-	queue_init(&G_SKYNET_MODIFY.ctrl_queue, p_uv_async_send, ctrl_async_t);
 
     // init uv
 	G_SKYNET_MODIFY.python_context = NULL;

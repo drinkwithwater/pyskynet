@@ -40,14 +40,15 @@ struct worker_parm {
 	int weight;
 };
 
-static volatile int SIG = 0;
 
+/* @cz rm
+// static volatile int SIG = 0;
 static void
 handle_hup(int signal) {
 	if (signal == SIGHUP) {
 		SIG = 1;
 	}
-}
+}*/
 
 #define CHECK_ABORT if (skynet_context_total()==0) break;
 
@@ -117,6 +118,7 @@ thread_monitor(void *p) {
 	return NULL;
 }
 
+/* @cz no need to reopen file, log goto python
 static void
 signal_hup() {
 	// make log file reopen
@@ -130,7 +132,7 @@ signal_hup() {
 	if (logger) {
 		skynet_context_push(logger, &smsg);
 	}
-}
+}*/
 
 static void *
 thread_timer(void *p) {
@@ -142,10 +144,10 @@ thread_timer(void *p) {
 		CHECK_ABORT
 		wakeup(m,m->count-1);
 		usleep(2500);
-		if (SIG) {
+		/*if (SIG) {
 			signal_hup();
 			SIG = 0;
-		}
+		}*/
 	}
 	// wakeup socket thread
 	skynet_socket_exit();
@@ -237,7 +239,7 @@ start(int thread) {
 }
 
 static void
-bootstrap(struct skynet_context * logger, const char * cmdline) {
+bootstrap(const char * cmdline) {
 	int sz = strlen(cmdline);
 	char name[sz+1];
 	char args[sz+1];
@@ -255,18 +257,19 @@ bootstrap(struct skynet_context * logger, const char * cmdline) {
 	struct skynet_context *ctx = skynet_context_new(name, args);
 	if (ctx == NULL) {
 		skynet_error(NULL, "Bootstrap error : %s\n", cmdline);
-		skynet_context_dispatchall(logger);
+		//skynet_context_dispatchall(logger);
 		exit(1);
 	}
 }
 
 void skynet_start(struct skynet_config * config) {
+	// @cz  no need to SIGHUP
 	// register SIGHUP for log file reopen
-	struct sigaction sa;
+	/*struct sigaction sa;
 	sa.sa_handler = &handle_hup;
 	sa.sa_flags = SA_RESTART;
 	sigfillset(&sa.sa_mask);
-	sigaction(SIGHUP, &sa, NULL);
+	sigaction(SIGHUP, &sa, NULL);*/
 
 	skynet_harbor_init(config->harbor);
 	skynet_handle_init(config->harbor);
@@ -277,16 +280,16 @@ void skynet_start(struct skynet_config * config) {
 	skynet_profile_enable(config->profile);
 
 	// launch logger service
-	struct skynet_context *logger_ctx = skynet_context_new("bridge", "logger");
+	/*struct skynet_context *logger_ctx = skynet_context_new("bridge", "logger");
 	if (logger_ctx == NULL) {
 		fprintf(stderr, "Can't launch bridge logger service\n");
 		exit(1);
 	}
 
-	skynet_handle_namehandle(skynet_context_handle(logger_ctx), "logger");
+	skynet_handle_namehandle(skynet_context_handle(logger_ctx), "logger");*/
 
 	// launch python service
-	struct skynet_context *python_ctx = skynet_context_new("bridge", "python");
+	struct skynet_context *python_ctx = skynet_context_new("python", NULL);
 	if (python_ctx == NULL) {
 		fprintf(stderr, "Can't launch bridge python service\n");
 		exit(1);
@@ -297,7 +300,7 @@ void skynet_start(struct skynet_config * config) {
 	G_SKYNET_MODIFY.python_context = python_ctx;
 	G_SKYNET_MODIFY.python_address = skynet_context_handle(python_ctx);
 
-	bootstrap(logger_ctx, config->bootstrap);
+	bootstrap(config->bootstrap);
 
 	start(config->thread);
 }

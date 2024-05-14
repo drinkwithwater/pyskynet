@@ -85,8 +85,8 @@ def create_skynet_extensions():
     return ext_cservices + [ext_skynet, ext_lpeg, ext_md5, ext_bson, ext_sproto]
 
 def create_lua_extensions():
-    lua_service_bridge = Extension('skynet.cservice.bridge',
-        sources=['src/c_src/service_bridge.c'],
+    lua_service_python = Extension('skynet.cservice.python',
+        sources=['src/c_src/service_python.c'],
         include_dirs=INCLUDE_DIRS,
         define_macros=MACROS,
         libraries=LIBRARIES)
@@ -111,7 +111,7 @@ def create_lua_extensions():
         define_macros=MACROS,
         extra_compile_args=['-std=c++11'],
         libraries=LIBRARIES)
-    return [lua_service_bridge, lua_foreign_seri, lua_modify, lua_numsky]
+    return [lua_service_python, lua_foreign_seri, lua_modify, lua_numsky]
 
 def create_3rd_extensions():
     lua_pb = Extension('pyskynet.lualib.pb',

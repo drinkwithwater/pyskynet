@@ -11,6 +11,7 @@
 #define PTYPE_FOREIGN_REMOTE 254
 #define PTYPE_FOREIGN 255
 #define PTYPE_DECREF_PYTHON 257 // bigger than 255 for diff with PTYPE in skynet.h
+#define PTYPE_LOGGER_PYTHON 258 // bigger than 255 for diff with PTYPE in skynet.h
 
 struct SkynetModifyMessage {
 	int type;
@@ -34,8 +35,7 @@ struct SkynetModifyQueue {
 };
 
 struct SkynetModifyGlobal {
-	struct SkynetModifyQueue msg_queue;  // queue for message
-	struct SkynetModifyQueue ctrl_queue;  // queue for log & dec
+	struct SkynetModifyQueue msg_queue;  // queue to python
 	// holder item
 	uint32_t python_address;
 	struct skynet_context * python_context;
@@ -47,12 +47,12 @@ struct SkynetModifyGlobal {
 
 extern struct SkynetModifyGlobal G_SKYNET_MODIFY;
 
-void skynet_modify_init(int (*p_uv_async_send)(void *), void* msg_async_t, void* ctrl_async_t); // binding libuv items
+void skynet_modify_init(int (*p_uv_async_send)(void *), void* msg_async_t); // binding libuv items
 
 /* function in skynet_modify_queue.c */
 void skynet_modify_decref_python(void * pyobj); // decref python object, called by foreign
-int skynet_modify_queue_pop(struct SkynetModifyQueue* queue, struct SkynetModifyMessage* message); // return if empty 1 else 0
-void skynet_modify_queue_push(struct SkynetModifyQueue* queue, struct SkynetModifyMessage* message); // return session
+int skynet_modify_queue_pop(struct SkynetModifyMessage* message); // return if empty 1 else 0
+void skynet_modify_queue_push(struct SkynetModifyMessage* message); // return session
 
 /* function in skynet_start_modify.c */
 void skynet_modify_start(struct skynet_config * config);

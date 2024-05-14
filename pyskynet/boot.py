@@ -59,55 +59,51 @@ def envs():
 #################
 
 __msg_watcher = gevent.get_hub().loop.async_()
-__ctrl_watcher = gevent.get_hub().loop.async_()
 
 __boot_event = None
 boot_service = None
 
 def __msg_callback():
     global boot_service
-    if boot_service is None:
-        source, type_id, session, ptr, length = _core.crecv()
-        # assert first message ( c.send(".python", 0, 0, "") )
-        assert type_id == 0, "first message type must be 0 but get %s" % type_id
-        assert session == 0, "first message session must be 0 but get %s" % session
-        boot_service, = pyskynet._foreign_seri.luaunpack(ptr, length)
-        __boot_event.set()
     while True:
         source, type_id, session, ptr, length = _core.crecv()
         if source is None:
             break
-        gevent.spawn(skynet.async_handle, source, type_id, session, ptr, length)
+        if type_id == _core.PTYPE_LOGGER_PYTHON:
+            __handle_logger(source, ptr)
+        elif boot_service is None:
+            # assert first message ( c.send(".python", 0, 0, "") )
+            assert type_id == 0, "first message type must be 0 but get %s" % type_id
+            assert session == 0, "first message session must be 0 but get %s" % session
+            boot_service, = pyskynet._foreign_seri.luaunpack(ptr, length)
+            __boot_event.set()
+        else:
+            gevent.spawn(skynet.async_handle, source, type_id, session, ptr, length)
 
 # logger call loop
-def __ctrl_async_callback():
-    while True:
-        source, data = _core.ctrl_pop_log()
-        if source is None:
-            break
-        data = data.decode("utf-8")
-        if data[0] == '|':
-            sp = data.split('|')
-            level = int(sp[1])
-            filename = sp[2]
-            lineno = int(sp[3])
-            body = sp[4] if len(sp) <= 5 else "|".join(sp[4:])
-        else:
-            level = logging.INFO
-            filename = "(unknown:%08x)" % source
-            lineno = 0
-            body = data
-        if skynet.logger.isEnabledFor(level):
-            record = logging.LogRecord(skynet.logger.name, level, filename, lineno, body, None, None, address=source)
-            skynet.logger.handle(record)
+def __handle_logger(source, data):
+    data = data.decode("utf-8")
+    if data[0] == '|':
+        sp = data.split('|')
+        level = int(sp[1])
+        filename = sp[2]
+        lineno = int(sp[3])
+        body = sp[4] if len(sp) <= 5 else "|".join(sp[4:])
+    else:
+        level = logging.INFO
+        filename = "(unknown:%08x)" % source
+        lineno = 0
+        body = data
+    if skynet.logger.isEnabledFor(level):
+        record = logging.LogRecord(skynet.logger.name, level, filename, lineno, body, None, None, address=source)
+        skynet.logger.handle(record)
 
 
 # preinit, register libuv items
 def __preinit():
     __msg_watcher.start(__msg_callback)
-    __ctrl_watcher.start(__ctrl_async_callback)
     p_uv_async_send = libuv_cffi.ffi.addressof(libuv_cffi.lib, "uv_async_send")
-    _core.init(libuv_cffi.ffi, p_uv_async_send, __msg_watcher._watcher, __ctrl_watcher._watcher)
+    _core.init(libuv_cffi.ffi, p_uv_async_send, __msg_watcher._watcher)
 
 
 __preinit()

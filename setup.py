@@ -7,7 +7,7 @@ def create_cython_extensions():
     ext_main = Extension('pyskynet._core',
         include_dirs=INCLUDE_DIRS,
         sources=['src/cy_src/_core.pyx'] +
-                list_path(SKYNET_SRC_PATH, ".c", ["skynet_main.c", "skynet_start.c", "skynet_env.c", "skynet_server.c"]) +
+                list_path(SKYNET_SRC_PATH, ".c", ["skynet_main.c", "skynet_start.c", "skynet_env.c", "skynet_server.c", "skynet_error.c"]) +
                 list_path("src/skynet_modify", ".c") +
                 list_path("numsky/src/skynet_foreign/", ".c") +
                 list_path(LUA_PATH, ".c", ["lua.c", "luac.c"]),

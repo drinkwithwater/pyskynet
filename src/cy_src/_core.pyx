@@ -63,8 +63,9 @@ cdef extern from "skynet_modify/skynet_modify.h":
         PTYPE_FOREIGN_REMOTE
         PTYPE_FOREIGN
         PTYPE_DECREF_PYTHON
-    int skynet_modify_queue_pop(SkynetModifyQueue* queue, SkynetModifyMessage* message); # return 1 if empty else 0
-    void skynet_modify_init(int (*p_uv_async_send)(void *), void* msg_async_t, void* ctrl_async_t);
+        PTYPE_LOGGER_PYTHON
+    int skynet_modify_queue_pop(SkynetModifyMessage* message); # return 1 if empty else 0
+    void skynet_modify_init(int (*p_uv_async_send)(void *), void* msg_async_t);
     void skynet_modify_start(skynet_config * config)
     void skynet_modify_wakeup();
     int skynet_modify_setlenv(const char *key, const char *value_str, size_t sz)
@@ -79,15 +80,14 @@ cdef extern from "skynet_env.h":
 
 ctypedef (char *)(* f_type)(object, object)
 
-def init(ffi, async_send, msg_watcher, ctrl_watcher):
+def init(ffi, async_send, msg_watcher):
     # because gevent's libuv bind with cffi, so we can get pointer by this way
     cdef void ** _cffi_exports = <void **>PyCapsule_GetPointer(_cffi_backend._C_API, "cffi")
     # get the '_cffi_to_c_pointer' function in _cffi_include.h of cffi
     cdef f_type _cffi_to_c_pointer = <f_type>_cffi_exports[11]
     skynet_modify_init(
             <int (*)(void*)>_cffi_to_c_pointer(async_send, ffi.typeof(async_send)),
-            <void *>_cffi_to_c_pointer(msg_watcher, ffi.typeof(msg_watcher)),
-            <void *>_cffi_to_c_pointer(ctrl_watcher, ffi.typeof(ctrl_watcher))
+            <void *>_cffi_to_c_pointer(msg_watcher, ffi.typeof(msg_watcher))
             )
 
 cdef __check_bytes(s):
@@ -177,33 +177,22 @@ cdef void free_pyptr(object capsule):
 # pop message from msg_queue
 def crecv():
     cdef SkynetModifyMessage msg
-    cdef int ret = skynet_modify_queue_pop(&G_SKYNET_MODIFY.msg_queue, &msg)
-    if ret != 0:
-        return None, None, None, None, None
-    else:
-        # TODO when msg.type is error , msg.data will be nil ?
-        if msg.data != NULL:
-            return msg.source, msg.type, msg.session, PyCapsule_New(msg.data, "pyptr", free_pyptr), msg.size
-        else:
-            return msg.source, msg.type, msg.session, b"", 0
-
-# pop message from ctrl_queue
-def ctrl_pop_log():
-    cdef SkynetModifyMessage msg
-    cdef int ret = skynet_modify_queue_pop(&G_SKYNET_MODIFY.ctrl_queue, &msg)
+    cdef int ret = skynet_modify_queue_pop(&msg)
     while ret == 0 and msg.type == PTYPE_DECREF_PYTHON:
         Py_XDECREF(<PyObject*>msg.data)
-        ret = skynet_modify_queue_pop(&G_SKYNET_MODIFY.ctrl_queue, &msg)
-    cdef char* data = <char*>msg.data
-    cdef int sz = msg.size
+        ret = skynet_modify_queue_pop(&msg)
+    cdef char* dataptr = <char*>msg.data
     if ret != 0:
-        return None, None
-    elif data == NULL:
-        return None, None
+        return None, None, None, None, None
+    elif dataptr == NULL:
+        return msg.source, msg.type, msg.session, b"", 0
+    elif msg.type == PTYPE_LOGGER_PYTHON:
+        text = dataptr[:msg.size]
+        skynet_free(dataptr)
+        return msg.source, msg.type, msg.session, text, 0
     else:
-        text = data[:sz]
-        skynet_free(data)
-        return msg.source, text
+        # TODO when msg.type is error , msg.data will be nil ?
+        return msg.source, msg.type, msg.session, PyCapsule_New(dataptr, "pyptr", free_pyptr), msg.size
 
 # see lsend in lua-skynet.c
 def csend(py_dst, int type_id, py_session, py_msg, py_size=None):
@@ -290,6 +279,7 @@ class PTYPEEnum(object):
         self.PTYPE_TRACE=12 # TRACE defined in skynet.lua
         self.PTYPE_FOREIGN=PTYPE_FOREIGN
         self.PTYPE_FOREIGN_REMOTE=PTYPE_FOREIGN_REMOTE
+        self.PTYPE_LOGGER_PYTHON=PTYPE_LOGGER_PYTHON
         self.PTYPE_TAG_ALLOCSESSION=PTYPE_TAG_ALLOCSESSION
         self.PTYPE_TAG_DONTCOPY=PTYPE_TAG_DONTCOPY
 
