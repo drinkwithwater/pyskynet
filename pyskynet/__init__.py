@@ -9,7 +9,6 @@ from pyskynet.skynet import logger, default_logger_handler
 import pyskynet.foreign as foreign
 import pyskynet._core as _core
 import inspect
-from typing import Optional, Callable
 
 __all__ = [
     "__version__",
@@ -24,6 +23,7 @@ __all__ = [
     "scriptservice",
 
     "logger",
+    "default_logger_handler",
 
     "self",
 

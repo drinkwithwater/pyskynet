@@ -157,15 +157,7 @@ def ret(ret_msg_ptr, ret_size):
 ################
 # raw dispatch #
 ################
-def __async_handle():
-    """
-        python actor's main loop, recv and deal message
-    """
-    source, type_id, session, ptr, length = _core.crecv()
-    if source is None:
-        return
-    else:
-        gevent.spawn(__async_handle)
+def async_handle(source, type_id, session, ptr, length):
     if type_id == SKYNET_PTYPE.PTYPE_RESPONSE:
         # TODO exception
         try:

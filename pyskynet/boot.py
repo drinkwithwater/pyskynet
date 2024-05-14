@@ -64,18 +64,20 @@ __ctrl_watcher = gevent.get_hub().loop.async_()
 __boot_event = None
 boot_service = None
 
-# first callback, waiting for pyskynet_boot
-def __first_msg_callback():
+def __msg_callback():
     global boot_service
-    source, type_id, session, ptr, length = _core.crecv()
-    # assert first message ( c.send(".python", 0, 0, "") )
-    assert type_id == 0, "first message type must be 0 but get %s" % type_id
-    assert session == 0, "first message session must be 0 but get %s" % session
-    boot_service, = pyskynet._foreign_seri.luaunpack(ptr, length)
-    __msg_watcher.callback = lambda: gevent.spawn(skynet.__async_handle)
-    gevent.spawn(skynet.__async_handle)
-    __boot_event.set()
-
+    if boot_service is None:
+        source, type_id, session, ptr, length = _core.crecv()
+        # assert first message ( c.send(".python", 0, 0, "") )
+        assert type_id == 0, "first message type must be 0 but get %s" % type_id
+        assert session == 0, "first message session must be 0 but get %s" % session
+        boot_service, = pyskynet._foreign_seri.luaunpack(ptr, length)
+        __boot_event.set()
+    while True:
+        source, type_id, session, ptr, length = _core.crecv()
+        if source is None:
+            break
+        gevent.spawn(skynet.async_handle, source, type_id, session, ptr, length)
 
 # logger call loop
 def __ctrl_async_callback():
@@ -102,7 +104,7 @@ def __ctrl_async_callback():
 
 # preinit, register libuv items
 def __preinit():
-    __msg_watcher.start(__first_msg_callback)
+    __msg_watcher.start(__msg_callback)
     __ctrl_watcher.start(__ctrl_async_callback)
     p_uv_async_send = libuv_cffi.ffi.addressof(libuv_cffi.lib, "uv_async_send")
     _core.init(libuv_cffi.ffi, p_uv_async_send, __msg_watcher._watcher, __ctrl_watcher._watcher)
