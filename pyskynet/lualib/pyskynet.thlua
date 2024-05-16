@@ -40,4 +40,6 @@ function pyskynet.scriptservice(script:String, ...)
 	return pyskynet.newservice("script_service", nSourceName, tostring(nScriptIndex), ...)
 end
 
+pyskynet.logprint = pyskynet_modify.logprint
+
 return pyskynet

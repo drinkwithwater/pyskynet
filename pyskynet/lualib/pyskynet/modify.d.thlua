@@ -16,4 +16,7 @@ end
 function.pass modify.refscript(vScript:String):Ret(Integer)
 end
 
+function.pass modify.logprint(vLevel:Union(10, 20, 30, 40, 50), vScriptName:String, vPos:Integer, ...:Any)
+end
+
 return modify

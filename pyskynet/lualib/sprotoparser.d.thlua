@@ -1,0 +1,10 @@
+
+local sparser = {}
+
+function.pass sparser.dump(str:String)
+end
+
+function.pass sparser.parse(text:String, name:OrNil(String)):Ret(String)
+end
+
+return sparser

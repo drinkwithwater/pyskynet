@@ -69,15 +69,9 @@ end
 function.pass sproto:default(typename:Truth, type:Truth):Ret(Truth)
 end
 
-function.pass host:dispatch@<T>(
-	blob:String, sz:OrNil(Integer)
-) :Ret("REQUEST", T, name2request[literal(T)], OrNil(Fn(name2response[literal(T)]):Ret(String)), Any)
-	:Ret("RESPONSE", Integer, name2response[literal(T)], Any)
-	if math.random () > 0 then
-		return "REQUEST", "typename", {}, function() end, "userdata"
-	else
-		return "RESPONSE", 0, {}, "userdata"
-	end
+function.pass host:dispatch(
+	blob:Union(String, LightUserdata), sz:OrNil(Integer)
+):Ret("REQUEST", String, Truth, OrNil(Fn(Truth):Ret(String)), Any):Ret("RESPONSE", Integer, Truth, Any)
 end
 
 function host:attach(sproto:let.SprotoObject)

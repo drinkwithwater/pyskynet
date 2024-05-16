@@ -1,0 +1,16 @@
+
+require@<let.SprotoObject> "sproto"
+
+local loader = {}
+
+function.pass loader.register(filename:String, index:Integer)
+end
+
+function.pass loader.save(bin:String, index:Integer)
+end
+
+function.pass loader.load(index:Integer):Ret(let.SprotoObject)
+end
+
+return loader
+

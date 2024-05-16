@@ -37,7 +37,7 @@ function BOOT.cmdline(scriptName, ...)
 	if not main then
 		error(err)
 	else
-		return main(...)
+		main(...)
 	end
 end
 
